@@ -1,0 +1,4 @@
+const PE_OPTIONAL_MAGIC = {
+  PE32: 0x10b,
+  PE32_PLUS: 0x20b
+};

@@ -1,0 +1,49 @@
+* {
+  font-family: Verdana;
+  font-size: 10px;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#header {
+  display: flex;
+  padding: 4px;
+  margin-bottom: 8px;
+}
+
+#container {
+  display: flex;
+  flex-direction: row;
+}
+
+.section-summary {
+  width: 20%;
+  min-width: 100px;
+  max-width: 200px;
+  border: 1px solid black;
+  margin: 0 3px 6px 3px;
+  padding: 5px;
+  font-family: Verdana;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.section-summary:last-child {
+  margin-bottom: 0;
+}
+
+#navbar {
+  display: flex;
+  flex-direction: column;
+}
+
+#content {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid black;
+  flex-grow: 1;
+  padding: 5px;
+}

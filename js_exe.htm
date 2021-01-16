@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="styles/main.css">
+    <script type="text/javascript" src="scripts/reader.js"></script>
+    <script type="text/javascript" src="scripts/consts.js"></script>
+    <script type="text/javascript" src="scripts/structs.js"></script>
+    <script type="text/javascript" src="scripts/machine.js"></script>
+    <script type="text/javascript" src="scripts/main.js"></script>
+  </head>
+  <body>
+
+    <div id="header">
+      <input type="file" id="file-selector">
+    </div>
+    <div id="container">
+      <div id="navbar">
+        <div id="section_summaries">
+          
+        </div>
+      </div>
+      <div id="content">
+
+      </div>
+    </div>
+
+    <script>
+      const fileSelector = document.getElementById('file-selector');
+      fileSelector.addEventListener('change', (event) => {
+        const fileList = event.target.files;
+        readFile(fileList[0]);
+      });
+
+      function readFile(file) {
+        const reader = new FileReader();
+        reader.addEventListener('load', (event) => {
+          const view = new Uint8Array(reader.result);
+          globals.exeFile = OpenExe(view);
+          SummariseFile();
+        });
+        reader.readAsArrayBuffer(file);
+      }
+
+    </script>
+
+  </body>
+</html>
