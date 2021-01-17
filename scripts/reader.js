@@ -84,10 +84,18 @@ class Reader {
     return v;
   }
 
+  ReadFixedLengthString(len, nullTerminate = true) {
+    var s = this.ReadBytes(len).map(
+      x => String.fromCharCode(x)).join("");
+    if (nullTerminate) s = s.split("\0")[0];
+    return s;
+  }
+
   ReadNTString() {
     var b;
     var s = "";
-    while ((b = this.ReadByte()) > 0) s += String.fromCharCode(b);
+    while ((b = this.ReadByte()) > 0)
+      s += String.fromCharCode(b);
     return s;
   }
 

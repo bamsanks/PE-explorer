@@ -51,6 +51,19 @@ var exeData = [
   0x00,0x00,0xDA,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x48,0x01,
   0x00,0x00,0xDA,0x10,0x00,0x00,0xEA,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
   0x00,0x00,0x55,0x01,0x00,0x00,0xEA,0x10,0x00,0x00];
+  
+
+function handleDragOver(e) {
+  e.preventDefault();
+}
+
+function handleDrop(e) {
+  let dt = e.dataTransfer;
+  let file = dt.files[0];
+
+  readFile(file);
+  e.preventDefault();
+}
 
 function OpenExe(data) {
   const file = new ExeFile(data);
@@ -60,10 +73,6 @@ function OpenExe(data) {
   // machine.Execute();
 
   return file;
-} 
-
-function CleanNTString(str) {
-  return str.split("\0")[0];
 }
 
 function CreateTable(tableData) {
@@ -84,6 +93,7 @@ function CreateTable(tableData) {
 
 function showSection(name) {
   var dest = document.getElementById("content");
+  var htmlOut;
   switch(name) {
     case "MZ Header":
       var keys = Object.keys(globals.exeFile.MZHeader);
@@ -113,29 +123,30 @@ function showSection(name) {
       dest.appendChild(CreateTable(tableData));
       break;
     case "Imports":
-      dest.innerHTML = "";
+      htmlOut = "";
       for (let importFile of globals.exeFile.Imports) {
-        dest.innerHTML += "<b>" + importFile.DllName + ":</b><br/>";
+        htmlOut += "<b>" + importFile.DllName + ":</b><br/>";
         for (let imp of importFile.Imports) {
-          dest.innerHTML += imp.ImportName + "<br>";
+          htmlOut += imp.ImportName + "<br>";
         }
-        dest.innerHTML += "<hr>";
+        htmlOut += "<hr>";
       }
+      dest.innerHTML = htmlOut;
       break;
     case "Exports":
-      dest.innerHTML = "";
+      htmlOut = "";
       for (let exp of globals.exeFile.Exports?.Exports ?? []) {
-        dest.innerHTML += exp.Name + "<br>";
+        htmlOut += exp.Name + "<br>";
       }
+      dest.innerHTML = htmlOut
       break;
     default:
       var section = globals.exeFile.SectionHeaders
-        .filter(x => CleanNTString(x.Name) == name)[0];
+        .filter(x => x.Name == name)[0];
         var keys = Object.keys(section);
         var tableData = [];
         for (let key of keys) {
           value = section[key];
-          if (key == "Name") value = CleanNTString(value);
           tableData.push([key, value]);
         }
         dest.innerHTML = "";
@@ -149,7 +160,7 @@ function SummariseFile() {
   var sectionNames = ["MZ Header", "PE Header", "PE Optional Header", "Imports", "Exports"];
 
   for (let sectionHeader of globals.exeFile.SectionHeaders) {
-    sectionNames.push(CleanNTString(sectionHeader.Name));
+    sectionNames.push(sectionHeader.Name);
   }
 
   cont.innerHTML = "";
@@ -160,34 +171,44 @@ function SummariseFile() {
     section.onclick = () => showSection(sectionName);
     cont.appendChild(section);
   }
-
-  // var sects = document.getElementsByClassName("section");
-  // var dest = sects[0].getElementsByClassName("content")[0];
-  // // MZHEADER
-  // var keys;
-  // keys = Object.keys(file.MZHeader);
-  // for (let key of keys) {
-  //   dest.innerHTML += key + ": " + file.MZHeader[key]?.Value + "<br/>";
-  // }
-
-  // // PEHEADER
-  // keys = Object.keys(file.PEHeader);
-  // dest = sects[1].getElementsByClassName("content")[0];
-  // for (let key of keys) {
-  //   dest.innerHTML += key + ": " + file.PEHeader[key].Value + "<br/>";
-  // }
-
-  // // PEOPTIONALHEADER
-  // keys = Object.keys(file.PEOptionalHeader);
-  // dest = sects[2].getElementsByClassName("content")[0];
-  // for (let key of keys) {
-  //   dest.innerHTML += key + ": " + file.PEOptionalHeader[key] + "<br/>";
-  // }
 }
 
 var globals = { exeFile: null };
 
+
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.addEventListener('load', (event) => {
+    const view = new Uint8Array(reader.result);
+    globals.exeFile = OpenExe(view);
+    SummariseFile();
+
+    //globals.viewer = new Viewer(globals.exeFile._reader, getViewer());
+    globals.viewer.SetData(globals.exeFile._reader);
+    globals.viewer.Print();
+  });
+  reader.readAsArrayBuffer(file);
+}
+
+function getViewer() {
+  return document.getElementById("hex-viewer");
+}
+
 window.onload = function() {
+
+  const fileSelector = document.getElementById('file-selector');
+  fileSelector.addEventListener('change', (event) => {
+    const fileList = event.target.files;
+    readFile(fileList[0]);
+  });
+
+  document.body.ondragover = handleDragOver;
+  document.body.ondrop = handleDrop;
   globals.exeFile = OpenExe(exeData);
+
+  globals.viewer = new Viewer(globals.exeFile._reader, getViewer());
+  globals.viewer.Print();
+
   SummariseFile();
 }

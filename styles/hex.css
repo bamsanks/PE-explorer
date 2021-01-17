@@ -1,0 +1,93 @@
+* {
+  border: none;
+}
+
+
+#hex-viewer code#lineNums div {
+  justify-content: flex-end;
+}
+
+#hex-viewer {
+  display: flex;
+  margin-top: 20px;
+  font-size: 12px;
+  cursor: default;
+  height: 100%;
+  overflow-y: hidden;
+}
+
+#hex-viewer code {
+  margin-right: 12px;
+  box-sizing: content-box;
+}
+
+#hex-viewer code div {
+  display: flex;
+  padding-left: 4px;
+  padding-right: 4px;
+  justify-content: left;
+}
+
+#hex-viewer code div.odd {
+  background-color: #efefef;
+}
+#hex-viewer code div.even {
+  background-color: #f8f8f8;
+}
+#hex-viewer.offset code div.odd {
+  background-color: #f8f8f8;
+}
+#hex-viewer.offset code div.even {
+  background-color: #efefef;
+}
+
+#hex-viewer>code>div>div:hover {
+  background-color: #eee;
+}
+
+.section-start, .section-end {
+  margin: 0;
+  padding: 0;
+  position: relative;
+  pointer-events: none;
+  height: 0;
+  font-size: 16px;
+}
+
+.section-start p, .section-end p {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  left: 15px;
+  top: -1px;
+  color: #f00;
+}
+
+#details {
+  margin-top: 40px;
+  border: 1px dashed black;
+  padding: 18px;
+  background-color: #f3f3f3;
+  min-height: 140px;
+  font-family: consolas;
+  font-size: 12px;
+  white-space: pre;
+}
+
+#scroller {
+  overflow-y: scroll;
+  min-width: 30px;
+  margin-left: auto;
+}
+
+#hex-viewer code#scroller {
+  margin-right: 0;
+}
+
+#hex-viewer>code>div>div.highlighted {
+  background-color: #0c88;
+}
+
+#hex-viewer>code>div>div.temphighlighted {
+  background-color: #008cc8 !important;
+}

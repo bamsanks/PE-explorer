@@ -1,11 +1,49 @@
-* {
+body {
+  font-family: Verdana;
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+table {
   font-family: Verdana;
   font-size: 10px;
 }
 
-body {
+td {
+  padding-right: 20px;
+}
+td:last-child {
+  width: 100%;
+}
+
+.splitter {
   display: flex;
   flex-direction: column;
+  height: 100%;
+}
+.panel {
+  display:flex;
+  flex-direction: column;
+  overflow-y: auto;
+  border: 2px solid #ddd;
+  border-width: 2px 0 2px 0;
+  padding: 10px;
+}
+
+#description-panel {
+  display: flex;
+  min-height: 300px;
+  border-width: 0 0 2px 0;
+  flex-grow: 0;
+}
+
+#hex-panel {
+  display: flex;
+  flex-grow: 1;
+  border-width: 2px 0 0 0;
+  overflow-y: none;
+  padding-right: 0;
 }
 
 #header {
@@ -46,4 +84,26 @@ body {
   border: 1px solid black;
   flex-grow: 1;
   padding: 5px;
+}
+
+#jumpToContainer {
+  display: flex;
+  visibility: hidden;
+  position: absolute;
+  z-index: 1000;
+  background-color: #555a;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+#jumpToContainer input {
+  padding: 8px;
+  font-family: consolas;
+  font-size: 12px;
 }

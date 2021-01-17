@@ -4,38 +4,6 @@
 //  - Maybe never use int32s - just registers?
 //  - ...
 
-var Utils = {
-  ToSignedByte: function(byte) {
-    if (byte < 0 || byte > 255) throw("Invalid byte value");
-    return byte - (byte > 128 ? 256 : 0);
-  },
-
-  ToInt32: function(uInt32) {
-    return uInt32 | 0;
-  },
-
-  ToLEBytes(value, size = 4) {
-    var v = value;
-    var bt = [];
-    for (let i = 0; i < size; i++) {
-      var b = v % 256;
-      bt.push(b);
-      v = (v - b) / 256;
-    }
-    return bt;
-  },
-
-  ToUInt32(bytes) {
-    if (bytes.length > 4) throw("More than 4 bytes provided in ToUInt32!");
-    var val = 0, exp = 1;
-    for (let i = 0; i < bytes.length; i++) {
-      val += (bytes[i] ?? 0) * exp;
-      exp *= 256;
-    }
-    return val;
-  }
-}
-
 class MemoryMap {
   Start; End; Owner
 

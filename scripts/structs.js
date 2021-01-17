@@ -286,7 +286,7 @@ class SectionHeader {
   }
 
   ReadFromStream(reader) {
-      this.Name = reader.ReadBytes(8).map(x => String.fromCharCode(x)).join("");
+      this.Name = reader.ReadFixedLengthString(8); // reader.ReadBytes(8).map(x => String.fromCharCode(x)).join("");
       this.VirtualSize = reader.ReadUInt32();
       this.VirtualAddress = reader.ReadUInt32();
       this.SizeOfRawData = reader.ReadUInt32();
