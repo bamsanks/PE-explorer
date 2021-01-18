@@ -11,7 +11,7 @@
     <script type="text/javascript" src="scripts/main.js"></script>
   </head>
   <body>
-    <div class="splitter">
+    <div id="splitter" class="splitter-horiz">
       <div id="description-panel" class="panel">
         <div id="header">
           <input type="file" id="file-selector">
@@ -39,6 +39,18 @@
         <input id="jumpToInput" placeholder="0xADDRESS">
       </div>
     </div>
+
+    <script>
+      function resize() {
+        var splitter = document.getElementById("splitter");
+        var idx = (window.innerHeight > window.innerWidth) ? 1 : 0;
+        var classes = ["splitter-horiz", "splitter-vert"];
+        splitter.classList.remove(classes[1-idx]);
+        splitter.classList.add(classes[idx]);
+      }
+      window.onresize = resize;
+      document.onload = resize;
+    </script>
 
   </body>
 </html>

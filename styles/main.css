@@ -17,9 +17,14 @@ td:last-child {
   width: 100%;
 }
 
-.splitter {
+.splitter-vert {
   display: flex;
   flex-direction: column;
+  height: 100%;
+}
+.splitter-horiz {
+  display: flex;
+  flex-direction: row;
   height: 100%;
 }
 .panel {
@@ -27,23 +32,32 @@ td:last-child {
   flex-direction: column;
   overflow-y: auto;
   border: 2px solid #ddd;
-  border-width: 2px 0 2px 0;
   padding: 10px;
+}
+
+.splitter-vert .panel {
+  border-width: 2px 0 2px 0;
+}
+
+.splitter-horiz .panel {
+  border-width: 0 2px 0 2px;
 }
 
 #description-panel {
   display: flex;
   min-height: 300px;
-  border-width: 0 0 2px 0;
   flex-grow: 0;
+  border-top-width: 0;
+  border-left-width: 0;
 }
 
 #hex-panel {
   display: flex;
   flex-grow: 1;
-  border-width: 2px 0 0 0;
   overflow-y: none;
   padding-right: 0;
+  border-bottom-width: 0;
+  border-right-width: 0;
 }
 
 #header {
