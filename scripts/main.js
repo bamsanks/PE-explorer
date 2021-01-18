@@ -69,7 +69,7 @@ function OpenExe(data) {
   const file = new ExeFile(data);
 
   const machine = new Machine(file._reader);
-  machine.LoadExe(file);
+  // machine.LoadExe(file);
   // machine.Execute();
 
   return file;
@@ -83,12 +83,25 @@ function CreateTable(tableData) {
     let tr = document.createElement("tr");
     for (let col of row) {
       let td = document.createElement("td");
-      td.innerText = col;
+      if (col instanceof HTMLElement) {
+        td.appendChild(col);
+      } else {
+        td.innerHTML = col;
+      }
       tr.appendChild(td);
     }
     table.appendChild(tr);
   }
   return table;
+}
+
+function CreateJumpLink(innerHTML, address, length = 1) {
+  var link = document.createElement("a");
+  //var js = "globals.viewer.JumpTo(" + address + ", length);";
+  link.onclick = () => globals.viewer.JumpTo(address, length);
+  link.setAttribute("href", "#B" + address);
+  link.innerHTML = innerHTML;
+  return link;
 }
 
 function showSection(name) {
@@ -99,7 +112,9 @@ function showSection(name) {
       var keys = Object.keys(globals.exeFile.MZHeader);
       var tableData = [];
       for (let key of keys) {
-        tableData.push([key, globals.exeFile.MZHeader[key]?.Value]);
+        let field = globals.exeFile.MZHeader[key];
+        let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
+        tableData.push([linkedKey, field?.toString()]);
       }
       dest.innerHTML = "";
       dest.appendChild(CreateTable(tableData));
@@ -108,7 +123,9 @@ function showSection(name) {
       var keys = Object.keys(globals.exeFile.PEHeader);
       var tableData = [];
       for (let key of keys) {
-        tableData.push([key, globals.exeFile.PEHeader[key]?.Value]);
+        let field = globals.exeFile.PEHeader[key];
+        let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
+        tableData.push([linkedKey, field.toString()]);
       }
       dest.innerHTML = "";
       dest.appendChild(CreateTable(tableData));
@@ -117,7 +134,9 @@ function showSection(name) {
       var keys = Object.keys(globals.exeFile.PEOptionalHeader);
       var tableData = [];
       for (let key of keys) {
-        tableData.push([key, globals.exeFile.PEOptionalHeader[key]]);
+        let field = globals.exeFile.PEOptionalHeader[key];
+        let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
+        tableData.push([linkedKey, field.toString()]);
       }
       dest.innerHTML = "";
       dest.appendChild(CreateTable(tableData));
@@ -146,8 +165,9 @@ function showSection(name) {
         var keys = Object.keys(section);
         var tableData = [];
         for (let key of keys) {
-          value = section[key];
-          tableData.push([key, value]);
+          let field = section[key];
+          let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
+          tableData.push([linkedKey, field.toString()]);
         }
         dest.innerHTML = "";
         dest.appendChild(CreateTable(tableData));
@@ -175,8 +195,6 @@ function SummariseFile() {
 
 var globals = { exeFile: null };
 
-
-
 function readFile(file) {
   const reader = new FileReader();
   reader.addEventListener('load', (event) => {
@@ -184,7 +202,6 @@ function readFile(file) {
     globals.exeFile = OpenExe(view);
     SummariseFile();
 
-    //globals.viewer = new Viewer(globals.exeFile._reader, getViewer());
     globals.viewer.SetData(globals.exeFile._reader);
     globals.viewer.Print();
   });

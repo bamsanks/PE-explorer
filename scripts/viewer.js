@@ -17,13 +17,13 @@ class Viewer {
     this.selectionLocked = false;
   }
 
-  SetData = function(data) {
+  SetData(data) {
     this.data = data;
     this.setNumVisibleLines();
     this.resizeScroller();
   }
 
-  initialise = function() {
+  initialise() {
 
     var viewer = this.container;
     this.container.innerHTML = "";
@@ -103,7 +103,7 @@ class Viewer {
 
   }
 
-  createScroller = function() {
+  createScroller() {
     var dummyDiv = document.createElement("div");
     this.scroller = document.createElement("code");
     this.scroller.setAttribute("id", "scroller");
@@ -111,11 +111,11 @@ class Viewer {
     this.container.appendChild(this.scroller);
   }
 
-  setNumVisibleLines = function() {
+  setNumVisibleLines() {
     this.numVisibleLines = Math.floor(this.container.clientHeight / Viewer.ROW_SIZE);
   }
 
-  resizeScroller = function() {
+  resizeScroller() {
     var numTotalLines = Math.ceil(this.data.Length / 16);
     var numInvisibleLines = numTotalLines - this.numVisibleLines;
     var invisibleHeight = numInvisibleLines * Viewer.SCROLL_TICK_PX;
@@ -124,7 +124,7 @@ class Viewer {
     dummy.style.height = (invisibleHeight + visibleHeight) + "px";
   }
 
-  Print = function() {
+  Print() {
     var lineStartByte = this.lineOffset * 16;
     this.data.JumpTo(lineStartByte, false, false);
     for (let line = 0; line < this.numVisibleLines; line++) {
@@ -146,7 +146,7 @@ class Viewer {
     }
   }
 
-  createSectionChars = function(parent) {
+  createSectionChars(parent) {
     var secStart = document.createElement("div");
     var secEnd = document.createElement("div");
     secStart.setAttribute("class", "section-start");
@@ -163,7 +163,7 @@ class Viewer {
     return [startChar, endChar];
   }
 
-  highlightSection = function(startByte, endByte, focByte, depth) {
+  highlightSection(startByte, endByte, focByte, depth) {
 
     var firstVisibleByte = this.lineOffset * 16;
     var lastVisibleByte = (this.lineOffset + this.numVisibleLines) * 16 - 1;
@@ -207,7 +207,7 @@ class Viewer {
 
   }
 
-  attachMouseEvents = function() {
+  attachMouseEvents() {
     this.container.onmousedown = function(e) {
       if (e.button === 0) this.selectionLocked = !this.selectionLocked;
       var row = this.lastSelectedEl?.[0];
@@ -257,7 +257,7 @@ class Viewer {
     }.bind(this);
   }
 
-  attachKeyEvents = function() {
+  attachKeyEvents() {
     document.body.onkeydown = function(e) {
       if (e.keyCode == 35) {
         this.JumpTo(this.data.length-1);
@@ -280,7 +280,7 @@ class Viewer {
     // }.bind(this);
   }
   
-  attachScrollEvents = function() {
+  attachScrollEvents() {
     this.scroller.onscroll = function() {
       //var scrollMax = this.scroller.scrollHeight - this.scroller.clientHeight;
       //var scrollPerc = scrollMax == 0 ? 0 : this.scroller.scrollTop / scrollMax;
@@ -298,7 +298,7 @@ class Viewer {
     }.bind(this);
   }
 
-  JumpTo = function(byte) {
+  JumpTo(byte, length = 1) {
     if (byte < 0) byte = 0;
     if (byte >= this.data.Length) byte = this.data.Length - 1;
     var [row, col] = this.getCoords(byte);
@@ -311,11 +311,19 @@ class Viewer {
 
     setTimeout(() => {
       this.Print();
-      var cell = this.getHexCell(row, col);
+      var cells = [];
+      for (let b = 0; b < length; b++) {
+        [row, col] = this.getCoords(byte + b);
+        cells.push(this.getHexCell(row, col));
+        cells.push(this.getTxtCell(row, col));
+        for (let cell of cells) {
+          if (!cell) return;
 
-      cell.style.transition = "1s";
-      cell.classList.add("temphighlighted");
-      setTimeout(() => cell.classList.remove("temphighlighted"), 0);
+          cell.classList.add("temphighlighted");
+          cell.style.transition = ".5s";
+          setTimeout(() => cell.classList.remove("temphighlighted"), 1000);
+        }
+      }
       
       // var tempHighlight = function(element, iters, maxIter) {
       //   if (maxIter == null) maxIter = iters;
@@ -330,30 +338,30 @@ class Viewer {
     }, 0);
   }
 
-  getHexCell = function(row, col) {
+  getHexCell(row, col) {
     var rowEl = this.subViews.hexLines[row - this.lineOffset];
     return rowEl?.getElementsByTagName("div")[col];
   }
 
-  getTxtCell = function(row, col) {
+  getTxtCell(row, col) {
     var rowEl = this.subViews.txtLines[row - this.lineOffset];
     return rowEl?.getElementsByTagName("div")[col];
   }
 
-  unhighlightAllCells = function() {
+  unhighlightAllCells() {
     var cell;
     while (cell = this.highlightedCells?.pop()) {
       cell.classList.remove("highlighted");
     }
   }
 
-  highlightCell = function(cell) {
+  highlightCell(cell) {
     if (!cell) return;
     cell.classList.add("highlighted");
     this.highlightedCells.push(cell);
   }
 
-  getCoords = function(bytePos) {
+  getCoords(bytePos) {
     var col = bytePos % 16;
     var row = (bytePos - col) / 16;
     return [row, col];

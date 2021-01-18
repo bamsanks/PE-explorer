@@ -107,3 +107,8 @@ td:last-child {
   font-family: consolas;
   font-size: 12px;
 }
+
+#content a, #content a:visited {
+  text-decoration: none;
+  color: #0073a8;
+}

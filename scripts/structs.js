@@ -26,20 +26,6 @@ class Range {
 
 }
 
-class Field {
-  _address; _value;
-
-  get Address() { return this._address; }
-  get Value() { return this._value; }
-
-  constructor(address, value) {
-    this._address = address;
-    this._value = value;
-  }
-
-  toString() { return this._address.toString(16) + ": " + this._value; }
-}
-
 class MZHeader {
   Signature; ExtraBytes; Pages;
   RelocItems; HeaderSize; MinAlloc;
@@ -56,29 +42,31 @@ class MZHeader {
 
   ReadFromStream(reader) { 
 
-      this.Signature = new Field(reader.Position, reader.ReadUInt16());
-      this.ExtraBytes = new Field(reader.Position, reader.ReadUInt16());
-      this.Pages = new Field(reader.Position, reader.ReadUInt16());
-      this.RelocItems = new Field(reader.Position, reader.ReadUInt16());
-      this.HeaderSize = new Field(reader.Position, reader.ReadUInt16());
-      this.MinAlloc = new Field(reader.Position, reader.ReadUInt16());
-      this.MaxAlloc = new Field(reader.Position, reader.ReadUInt16());
-      this.InitSS = new Field(reader.Position, reader.ReadUInt16());
-      this.InitSP = new Field(reader.Position, reader.ReadUInt16());
-      this.Checksum = new Field(reader.Position, reader.ReadUInt16());
-      this.InitIP = new Field(reader.Position, reader.ReadUInt16());
-      this.InitCS = new Field(reader.Position, reader.ReadUInt16());
-      this.RelocTable = new Field(reader.Position, reader.ReadUInt16());
-      this.Overlay = new Field(reader.Position, reader.ReadUInt16());
+      this.Signature = reader.ReadBytes(2, true);
+      this.ExtraBytes = reader.ReadUInt16(true);
+      this.Pages = reader.ReadUInt16(true);
+      this.RelocItems = reader.ReadUInt16(true);
+      this.HeaderSize = reader.ReadUInt16(true);
+      this.MinAlloc = reader.ReadUInt16(true);
+      this.MaxAlloc = reader.ReadUInt16(true);
+      this.InitSS = reader.ReadUInt16(true);
+      this.InitSP = reader.ReadUInt16(true);
+      this.Checksum = reader.ReadUInt16(true);
+      this.InitIP = reader.ReadUInt16(true);
+      this.InitCS = reader.ReadUInt16(true);
+      this.RelocTable = reader.ReadUInt16(true);
+      this.Overlay = reader.ReadUInt16(true);
 
       reader.ReadBytes(8); // Reserved space
 
-      this.OemIdentifier = new Field(reader.Position, reader.ReadUInt16());
-      this.OemInfo = new Field(reader.Position, reader.ReadUInt16());
+      this.OemIdentifier = reader.ReadUInt16(true);
+      this.OemInfo = reader.ReadUInt16(true);
 
       reader.ReadBytes(20); // Reserved space
 
-      this.PEHeaderStart = new Field(reader.Position, reader.ReadUInt32());
+      this.PEHeaderStart = reader.ReadUInt32(true);
+
+      this.Signature.Formatter = Utils.BytesToString;
   }
 
 }
@@ -97,14 +85,16 @@ class PEHeader {
   }
 
   ReadFromStream(reader) {
-    this.Magic = new Field(reader.Position, reader.ReadUInt32());
-    this.Machine = new Field(reader.Position, reader.ReadUInt16());
-    this.NumberOfSections = new Field(reader.Position, reader.ReadUInt16());
-    this.TimeDateStamp = new Field(reader.Position, reader.ReadUInt32());
-    this.PointerToSymbolTable = new Field(reader.Position, reader.ReadUInt32());
-    this.NumberOfSymbols = new Field(reader.Position, reader.ReadUInt32());
-    this.SizeOfOptionalHeader = new Field(reader.Position, reader.ReadUInt16());
-    this.Characteristics = new Field(reader.Position, reader.ReadUInt16());
+    this.Magic = reader.ReadBytes(4, true);
+    this.Machine = reader.ReadUInt16(true);
+    this.NumberOfSections = reader.ReadUInt16(true);
+    this.TimeDateStamp = reader.ReadUInt32(true);
+    this.PointerToSymbolTable = reader.ReadUInt32(true);
+    this.NumberOfSymbols = reader.ReadUInt32(true);
+    this.SizeOfOptionalHeader = reader.ReadUInt16(true);
+    this.Characteristics = reader.ReadUInt16(true);
+
+    this.Magic.Formatter = Formatters.HexAndText;
   }
 }
 
@@ -132,46 +122,47 @@ class PEOptionalHeader {
   }
 
   ReadFromStream(reader) {
-      this.Magic = reader.ReadUInt16();
+      this.Magic = reader.ReadBytes(2, true);
+      var uintMagic = Utils.ToUInt32(this.Magic.Value);
 
       var magicKnown =
-        this.Magic == PE_OPTIONAL_MAGIC.PE32 ||
-        this.Magic == PE_OPTIONAL_MAGIC.PE32_PLUS;
+        uintMagic == PE_OPTIONAL_MAGIC.PE32 ||
+        uintMagic == PE_OPTIONAL_MAGIC.PE32_PLUS;
 
       if (!magicKnown) throw("Unknown magic number in PE optional header");
 
-      var bit32 = this.Magic == PE_OPTIONAL_MAGIC.PE32;
+      var bit32 = uintMagic == PE_OPTIONAL_MAGIC.PE32;
 
-      this.MajorLinkerVersion = reader.ReadByte();
-      this.MinorLinkerVersion = reader.ReadByte();
-      this.SizeOfCode = reader.ReadUInt32();
-      this.SizeOfInitializedData = reader.ReadUInt32();
-      this.SizeOfUninitializedData = reader.ReadUInt32();
-      this.AddressOfEntryPoint = reader.ReadUInt32();
-      this.BaseOfCode = reader.ReadUInt32();
-      this.BaseOfData = bit32 ? reader.ReadUInt32() : 0;
+      this.MajorLinkerVersion = reader.ReadByte(true);
+      this.MinorLinkerVersion = reader.ReadByte(true);
+      this.SizeOfCode = reader.ReadUInt32(true);
+      this.SizeOfInitializedData = reader.ReadUInt32(true);
+      this.SizeOfUninitializedData = reader.ReadUInt32(true);
+      this.AddressOfEntryPoint = reader.ReadUInt32(true);
+      this.BaseOfCode = reader.ReadUInt32(true);
+      this.BaseOfData = bit32 ? reader.ReadUInt32(true) : 0;
 
-      this.ImageBase = bit32 ? reader.ReadUInt32() : reader.ReadUInt64();
-      this.SectionAlignment = reader.ReadUInt32();
-      this.FileAlignment = reader.ReadUInt32();
-      this.MajorOperatingSystemVersion = reader.ReadUInt16();
-      this.MinorOperatingSystemVersion = reader.ReadUInt16();
-      this.MajorImageVersion = reader.ReadUInt16();
-      this.MinorImageVersion = reader.ReadUInt16();
-      this.MajorSubsystemVersion = reader.ReadUInt16();
-      this.MinorSubsystemVersion = reader.ReadUInt16();
-      this.Win32VersionValue = reader.ReadUInt32();
-      this.SizeOfImage = reader.ReadUInt32();
-      this.SizeOfHeaders = reader.ReadUInt32();
-      this.CheckSum = reader.ReadUInt32();
-      this.Subsystem = reader.ReadUInt16();
-      this.DllCharacteristics = reader.ReadUInt16();
-      this.SizeOfStackReserve = bit32 ? reader.ReadUInt32() : reader.ReadUInt64();
-      this.SizeOfStackCommit = bit32 ? reader.ReadUInt32() : reader.ReadUInt64();
-      this.SizeOfHeapReserve = bit32 ? reader.ReadUInt32() : reader.ReadUInt64();
-      this.SizeOfHeapCommit = bit32 ? reader.ReadUInt32() : reader.ReadUInt64();
-      this.LoaderFlags = reader.ReadUInt32();
-      this.NumberOfRvaAndSizes = reader.ReadUInt32();
+      this.ImageBase = bit32 ? reader.ReadUInt32(true) : reader.ReadUInt64(true);
+      this.SectionAlignment = reader.ReadUInt32(true);
+      this.FileAlignment = reader.ReadUInt32(true);
+      this.MajorOperatingSystemVersion = reader.ReadUInt16(true);
+      this.MinorOperatingSystemVersion = reader.ReadUInt16(true);
+      this.MajorImageVersion = reader.ReadUInt16(true);
+      this.MinorImageVersion = reader.ReadUInt16(true);
+      this.MajorSubsystemVersion = reader.ReadUInt16(true);
+      this.MinorSubsystemVersion = reader.ReadUInt16(true);
+      this.Win32VersionValue = reader.ReadUInt32(true);
+      this.SizeOfImage = reader.ReadUInt32(true);
+      this.SizeOfHeaders = reader.ReadUInt32(true);
+      this.CheckSum = reader.ReadUInt32(true);
+      this.Subsystem = reader.ReadUInt16(true);
+      this.DllCharacteristics = reader.ReadUInt16(true);
+      this.SizeOfStackReserve = bit32 ? reader.ReadUInt32(true) : reader.ReadUInt64(true);
+      this.SizeOfStackCommit = bit32 ? reader.ReadUInt32(true) : reader.ReadUInt64(true);
+      this.SizeOfHeapReserve = bit32 ? reader.ReadUInt32(true) : reader.ReadUInt64(true);
+      this.SizeOfHeapCommit = bit32 ? reader.ReadUInt32(true) : reader.ReadUInt64(true);
+      this.LoaderFlags = reader.ReadUInt32(true);
+      this.NumberOfRvaAndSizes = reader.ReadUInt32(true);
 
       this.directoryEntries = []; //new DataDirectoryEntry[NumberOfRvaAndSizes];
 
@@ -185,8 +176,8 @@ class PEOptionalHeader {
       for (let i = 0; i < this.NumberOfRvaAndSizes; i++) {
           this.directoryEntries[i] = new DataDirectoryEntry(
               directoryNames[i],
-              reader.ReadUInt32(),
-              reader.ReadUInt32());
+              reader.ReadUInt32(true),
+              reader.ReadUInt32(true));
           /////
           // streamMap.JumpTo(directoryEntries[i].RelativeVirtualAddress);
           // directoryEntries[i].data =
@@ -195,6 +186,10 @@ class PEOptionalHeader {
           // streamMap.JumpBack();
           /////
       }
+
+      
+      this.Magic.Formatter = Formatters.HexAndText;
+      this.AddressOfEntryPoint.Formatter = Formatters.Hex;
 
   }
 
@@ -280,22 +275,25 @@ class SectionHeader {
 
   CreateRangeMap() {
     return new Range(
-      this.VirtualAddress,
-      this.SizeOfRawData,
-      this.PointerToRawData);
+      this.VirtualAddress.Value,
+      this.SizeOfRawData.Value,
+      this.PointerToRawData.Value);
   }
 
   ReadFromStream(reader) {
-      this.Name = reader.ReadFixedLengthString(8); // reader.ReadBytes(8).map(x => String.fromCharCode(x)).join("");
-      this.VirtualSize = reader.ReadUInt32();
-      this.VirtualAddress = reader.ReadUInt32();
-      this.SizeOfRawData = reader.ReadUInt32();
-      this.PointerToRawData = reader.ReadUInt32();
-      this.PointerToRelocations = reader.ReadUInt32();
-      this.PointerToLineNumbers = reader.ReadUInt32();
-      this.NumberOfRelocations = reader.ReadUInt16();
-      this.NumberOfLineNumbers = reader.ReadUInt16();
-      this.Characteristics = reader.ReadUInt32();
+      this.Name = reader.ReadFixedLengthString(8, true, true); // reader.ReadBytes(8).map(x => String.fromCharCode(x)).join("");
+      this.VirtualSize = reader.ReadUInt32(true);
+      this.VirtualAddress = reader.ReadUInt32(true);
+      this.SizeOfRawData = reader.ReadUInt32(true);
+      this.PointerToRawData = reader.ReadUInt32(true);
+      this.PointerToRelocations = reader.ReadUInt32(true);
+      this.PointerToLineNumbers = reader.ReadUInt32(true);
+      this.NumberOfRelocations = reader.ReadUInt16(true);
+      this.NumberOfLineNumbers = reader.ReadUInt16(true);
+      this.Characteristics = reader.ReadUInt32(true);
+
+      this.VirtualAddress.Formatter = Formatters.Hex;
+      this.PointerToRawData.Formatter = Formatters.Address;
   }
 }
 
@@ -354,17 +352,17 @@ class ImportSection {
 
   ResolveDllName() {
     this._reader.JumpTo(this.NameRVA);
-    this.DllName = this._reader.ReadNTString();
+    this.DllName = this._reader.ReadNTString(true);
     this._reader.JumpBack();
   }
 
   constructor(reader, bit64 = false) {
       this._reader = reader;
-      this.ImportLookupTableRVA = this._reader.ReadUInt32();
-      this.Timestamp = this._reader.ReadUInt32();
-      this.ForwarderChain = this._reader.ReadUInt32();
-      this.NameRVA = this._reader.ReadUInt32();
-      this.ImportAddressTableRVA = this._reader.ReadUInt32();
+      this.ImportLookupTableRVA = this._reader.ReadUInt32(true);
+      this.Timestamp = this._reader.ReadUInt32(true);
+      this.ForwarderChain = this._reader.ReadUInt32(true);
+      this.NameRVA = this._reader.ReadUInt32(true);
+      this.ImportAddressTableRVA = this._reader.ReadUInt32(true);
       this.bit64 = bit64;
       this.ResolveDllName();
 
@@ -379,21 +377,21 @@ class ImportSection {
   ReadImports() {
       var imports = [];
       var importEntry = this._bit64 ?
-        this._reader.ReadUInt64() :
-        this._reader.ReadUInt32();
+        this._reader.ReadUInt64(true) :
+        this._reader.ReadUInt32(true);
       while (importEntry != 0) {
           var importItem = new Import(importEntry, this._bit64);
           /// Messy
           this._reader.JumpTo(importItem.ImportNameLoc);
-          this._reader.ReadUInt16(); //// TODO: Use this.. this is the "hint" part of the hint table
-          importItem.ImportName = this._reader.ReadNTString();
-          if (this._reader.Position % 2 == 1) this._reader.ReadByte();
+          this._reader.ReadUInt16(true); //// TODO: Use this.. this is the "hint" part of the hint table
+          importItem.ImportName = this._reader.ReadNTString(true);
+          if (this._reader.Position % 2 == 1) this._reader.ReadByte(true);
           this._reader.JumpBack();
           ///
           imports.push(importItem);
           importEntry = this._bit64 ?
-            this._reader.ReadUInt64() :
-            this._reader.ReadUInt32();
+            this._reader.ReadUInt64(true) :
+            this._reader.ReadUInt32(true);
 
       }
       return imports;
@@ -422,7 +420,7 @@ class ExportSection {
 
   _getName(reader) {
       reader.JumpTo(this.NameRVA);
-      var dllName = reader.ReadNTString();
+      var dllName = reader.ReadNTString(true);
       reader.JumpBack();
       return dllName;
   }
@@ -433,16 +431,16 @@ class ExportSection {
       for (let i = 0; i < this.NumNamePointers; i++) {
           // Get name
           reader.JumpTo(this.NamePointerRVA + i * 4, false);
-          reader.JumpTo(reader.ReadInt32(), false);
-          var s = reader.ReadNTString();
+          reader.JumpTo(reader.ReadInt32(true), false);
+          var s = reader.ReadNTString(true);
 
           // Get ordinal
           reader.JumpTo(this.OrdinalTableRVA + i * 2, false);
-          var o = reader.ReadInt16();
+          var o = reader.ReadInt16(true);
 
           // Get address
           reader.JumpTo(this.ExportAddressTableRVA + o * 4, false);
-          var rva = reader.ReadInt32();
+          var rva = reader.ReadInt32(true);
           exports.push(new Export(s, rva));
       }
       reader.JumpBack();
@@ -450,17 +448,17 @@ class ExportSection {
   }
 
   ReadFromStream(reader) {
-    this.ExportFlags = reader.ReadUInt32();
-    this.Timestamp = reader.ReadUInt32();
-    this.MajorVersion = reader.ReadUInt16();
-    this.MinorVersion = reader.ReadUInt16();
-    this.NameRVA = reader.ReadUInt32();
-    this.OrdinalBase = reader.ReadUInt32();
-    this.AddressTableEntries = reader.ReadUInt32();
-    this.NumNamePointers = reader.ReadUInt32();
-    this.ExportAddressTableRVA = reader.ReadUInt32();
-    this.NamePointerRVA = reader.ReadUInt32();
-    this.OrdinalTableRVA = reader.ReadUInt32();
+    this.ExportFlags = reader.ReadUInt32(true);
+    this.Timestamp = reader.ReadUInt32(true);
+    this.MajorVersion = reader.ReadUInt16(true);
+    this.MinorVersion = reader.ReadUInt16(true);
+    this.NameRVA = reader.ReadUInt32(true);
+    this.OrdinalBase = reader.ReadUInt32(true);
+    this.AddressTableEntries = reader.ReadUInt32(true);
+    this.NumNamePointers = reader.ReadUInt32(true);
+    this.ExportAddressTableRVA = reader.ReadUInt32(true);
+    this.NamePointerRVA = reader.ReadUInt32(true);
+    this.OrdinalTableRVA = reader.ReadUInt32(true);
 
     this.DllName = this._getName(reader);
     this.Exports = this._getExports(reader);

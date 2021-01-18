@@ -1,7 +1,49 @@
+var Formatters = {
+  HexAndText: function(value) {
+    var uintValue;
+    if (typeof value == "number") {
+      value = Utils.ToLEBytes(value);
+      uintValue = value;
+    } else if (value instanceof Array) {
+      uintValue = Utils.ToUInt32(value);
+    } else {
+      throw("Unknown data type passed to formatter");
+    }
+    var hex = "0x" + uintValue.toString(16);
+    var text = value.map(Utils.ConvertToChar).join("");
+    return `${hex} (${text})`;
+  },
+
+  Hex: function(value) {
+    return "0x" + value.toString(16);
+  },
+
+  Address: function(value) {
+    return Utils.CreateJumpLink(
+      Formatters.Hex(value),
+      value);
+  }
+}
+
 var Utils = {
+
+  CreateJumpLink: function(innerHTML, address, length = 1) {
+    var link = document.createElement("a");
+    link.onclick = () => globals.viewer.JumpTo(address, length); // TODO: Very dependent on globals...!
+    link.setAttribute("href", "#B" + address);
+    link.innerHTML = innerHTML;
+    return link;
+  },
+
+
   DecToHex: function(d, pad = 2) {
-    var h = d.toString(16);
-    return h.padStart(pad, "0");
+    var isArray = (d instanceof Array);
+    if (!isArray) d = [d];
+    for (let i in d) {
+      d[i] = d[i].toString(16).padStart(pad, "0");
+    }
+    if (!isArray) d = d[0];
+    return d;
   },
 
   HexToDec: function(h) {
@@ -63,5 +105,13 @@ var Utils = {
       if (e.key == "Enter") callback(Utils.ParseDecOrHex(inputBox.value));
       if (["Enter", "Escape"].includes(e.key)) cont.style.visibility = "hidden";
     }
+  },
+  
+  BytesToString: function(bytes) {
+    var s = "";
+    for (let b of bytes) {
+      s += String.fromCharCode(b);
+    }
+    return s;
   }
 }
