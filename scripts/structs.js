@@ -304,13 +304,13 @@ class Import {
   // ImportNameLoc;
 
   constructor(code, bit64 = false) {
-      var mask = bit64 ? 0x8000000000000000 : 0x80000000;
-      this.ByOrdinal = (code | mask) == mask;
-      if (this.ByOrdinal) {
-        this.Ordinal = code & 0xFFFF;
-      } else {
-        this.ImportNameLoc = code & 0xFFFFFFFF;
-      }
+    var HIGH_BIT = bit64 ? 0x8000000000000000 : 0x80000000;
+    this.ByOrdinal = code >= HIGH_BIT;
+    if (this.ByOrdinal) {
+      this.Ordinal = code % 0x10000;
+    } else {
+      this.ImportNameLoc = code % 0x100000000;
+    }
   }
 
 }
