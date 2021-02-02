@@ -363,7 +363,7 @@ class ImportSection {
       this.ForwarderChain = this._reader.ReadUInt32(true);
       this.NameRVA = this._reader.ReadUInt32(true);
       this.ImportAddressTableRVA = this._reader.ReadUInt32(true);
-      this.bit64 = bit64;
+      this._bit64 = bit64;
       this.ResolveDllName();
 
       if (this.IsEmpty()) return;
@@ -466,6 +466,109 @@ class ExportSection {
 
 }
 
+class ResourceDirectoryTable {
+
+  constructor(reader, address, resourceBaseAddress) {
+    if (!resourceBaseAddress) resourceBaseAddress = address;
+    this.ReadFromStream(reader, address, resourceBaseAddress);
+  }
+
+  ReadFromStream(reader, address, resourceBaseAddress) {
+    reader.JumpTo(address, true, false);
+    this.Characteristics = reader.ReadUInt32();
+    this.TimeDateStamp = reader.ReadUInt32();
+    this.MajorVersion = reader.ReadUInt16();
+    this.MinorVersion = reader.ReadUInt16();
+    this.NumberOfNameEntries = reader.ReadUInt16();
+    this.NumberOfIDEntries = reader.ReadUInt16();
+    this.Entries = [];
+    for (let i = 0; i < this.NumberOfNameEntries; i++) {
+      this.Entries.push(new ResourceDirectoryEntry(reader, resourceBaseAddress));
+    }
+    for (let i = 0; i < this.NumberOfIDEntries; i++) {
+      this.Entries.push(new ResourceDirectoryEntry(reader, resourceBaseAddress));
+    }
+    reader.JumpBack();
+  }
+
+}
+
+class ResourceDirectoryEntry {
+
+  IsNamed;
+  Name;
+  ID;
+  IsLeaf;
+  Child;
+
+  constructor(reader, resourceBaseAddress) {
+    this.ReadFromStream(reader, resourceBaseAddress);
+  }
+
+  ReadName(reader, address) {
+    reader.JumpTo(address, true, false);
+    var stringLength = reader.ReadUInt16();
+    var strBytes = [];
+    for (let i = 0; i < stringLength * 2; i++) {
+      strBytes.push(reader.ReadByte());
+    }
+    reader.JumpBack();
+    var enc = new TextDecoder("utf-16");
+    var arr = new Uint8Array(strBytes);
+    return enc.decode(arr);
+  }
+
+  ReadFromStream(reader, resourceBaseAddress) {
+    var HIGH_BIT = 0x80000000;
+    var id = reader.ReadUInt32();
+
+    this.IsNamed = id >= HIGH_BIT;
+    if (this.IsNamed) {
+      id -= HIGH_BIT;
+      this.Name = this.ReadName(reader, resourceBaseAddress + id);
+    } else {
+      this.ID = id;
+    }
+    
+    var dataAddress = reader.ReadUInt32();
+    this.IsLeaf = dataAddress < HIGH_BIT;
+    if (dataAddress >= HIGH_BIT) dataAddress -= HIGH_BIT;
+    this.Child = this.IsLeaf ?
+      new ResourceDataEntry(reader, resourceBaseAddress + dataAddress) :
+      new ResourceDirectoryTable(reader, resourceBaseAddress + dataAddress, resourceBaseAddress);
+  }
+}
+
+class ResourceDataEntry {
+
+  reader;
+  DataRVA;
+  Size;
+  Codepage;
+
+  constructor(reader, address) {
+    this.ReadFromStream(reader, address);
+  }
+
+  ReadFromStream(reader, address) {
+    this.reader = reader;
+    reader.JumpTo(address, true, false);
+    this.DataRVA = reader.ReadUInt32();
+    this.Size = reader.ReadUInt32();
+    this.Codepage = reader.ReadUInt32();
+    reader.ReadUInt32(); // Reserved
+    reader.JumpBack();
+  }
+
+  Extract() {
+    this.reader.JumpTo(this.DataRVA, true, false);
+    var data = this.reader.ReadBytes(this.Size);
+    this.reader.JumpBack();
+    return data;
+  }
+
+}
+
 
 class ExeFile {
   Reader;
@@ -525,6 +628,20 @@ class ExeFile {
     return new ExportSection(this._reader);
   }
 
+  ReadResources() {
+    var resourceSection = this.GetSection(".rsrc");
+    if (resourceSection == null) return;
+    var baseAddr = resourceSection.PointerToRawData.Value;
+    return new ResourceDirectoryTable(this._reader, baseAddr);
+  }
+
+  GetSection(name) {
+    var s = this.SectionHeaders.filter(x => x.Name.Value.toLowerCase() == name);
+    if (s.length > 1) throw("More than one section called " + name);
+    if (s.length == 0) return null;
+    return s[0];
+  }
+
   constructor(data) {
     this._reader = new Reader(data);
     this.MZHeader = new MZHeader(this._reader);
@@ -534,6 +651,7 @@ class ExeFile {
     this._reader.AddressMaps = this.CreateRangeMaps();
     this.Imports = this.ReadImports();
     this.Exports = this.ReadExports();
+    this.Resources = this.ReadResources();
   }
 
 }

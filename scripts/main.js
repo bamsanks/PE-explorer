@@ -104,6 +104,37 @@ function CreateJumpLink(innerHTML, address, length = 1) {
   return link;
 }
 
+function showres(reflink) {
+  var path = reflink.attributes.attr.value;
+  path = path.split(",");
+  var item = globals.exeFile.Resources;
+  for (let step of path) {
+    item = item.Entries[step].Child;
+  }
+  console.log(item.Extract());
+}
+
+function CreateResourceTree(resourceDirectory, path = "") {
+  var htmlOut = "";
+  if (resourceDirectory instanceof ResourceDirectoryTable) {
+    htmlOut = "<ul>";
+    let i = 0;
+    for (let entry of resourceDirectory.Entries) {
+      newPath = path + (path == "" ? "" : ",") + (i++);
+      htmlOut += "<li>\n" + 
+        CreateResourceTree(entry.Child, newPath) +
+      "</li>\n";
+    }
+    htmlOut += "</ul>";
+  } else if (resourceDirectory instanceof ResourceDataEntry) {
+    debugger;
+    htmlOut += "<li><a attr='" + path + "' href='#' onclick='showres(this)'>FILE</a></li>";
+  } else {
+    throw("Unknown type");
+  }
+  return htmlOut;
+}
+
 function showSection(name) {
   var dest = document.getElementById("content");
   var htmlOut;
@@ -159,6 +190,10 @@ function showSection(name) {
       }
       dest.innerHTML = htmlOut
       break;
+    case "Resources":
+      htmlOut = CreateResourceTree(globals.exeFile.Resources);
+      dest.innerHTML = htmlOut;
+      break;
     default:
       var section = globals.exeFile.SectionHeaders
         .filter(x => x.Name == name)[0];
@@ -177,7 +212,9 @@ function showSection(name) {
 
 function SummariseFile() {
   var cont = document.getElementById("section_summaries");
-  var sectionNames = ["MZ Header", "PE Header", "PE Optional Header", "Imports", "Exports"];
+  var sectionNames = [
+    "MZ Header", "PE Header", "PE Optional Header",
+    "Imports", "Exports", "Resources"];
 
   for (let sectionHeader of globals.exeFile.SectionHeaders) {
     sectionNames.push(sectionHeader.Name);

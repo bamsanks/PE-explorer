@@ -27,6 +27,15 @@ var Formatters = {
 
 var Utils = {
 
+  SaveByteArray: function(fileName, byte) {
+    var blob = new Blob([new Uint8Array(byte)], {type: "application/octet-stream"});
+    var link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+    window.URL.revokeObjectURL(link.href);
+  },
+
   CreateJumpLink: function(innerHTML, address, length = 1) {
     var link = document.createElement("a");
     link.onclick = () => globals.viewer.JumpTo(address, length); // TODO: Very dependent on globals...!
@@ -115,3 +124,4 @@ var Utils = {
     return s;
   }
 }
+
