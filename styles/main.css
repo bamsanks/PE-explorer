@@ -122,6 +122,10 @@ td:last-child {
   font-size: 12px;
 }
 
+#jumpToContainer input::selection {
+  background-color: #efbdc6;
+}
+
 #content a, #content a:visited {
   text-decoration: none;
   color: #0073a8;

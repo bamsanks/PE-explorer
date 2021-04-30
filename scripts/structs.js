@@ -642,6 +642,21 @@ class ExeFile {
     return s[0];
   }
 
+  Find(data, start = 0) {
+    if (typeof data === "string") {
+      data = data.split("").map(x => x.charCodeAt(0))
+    }
+    var len = this._reader._data.length - data.length;
+    for (let i = start; i < len; i++) {
+      let j = 0;
+      while (this._reader._data[i+j] == data[j]) {
+        j++;
+        if (j == data.length) return i;
+      }
+    }
+    return -1;
+  }
+
   constructor(data) {
     this._reader = new Reader(data);
     this.MZHeader = new MZHeader(this._reader);

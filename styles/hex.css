@@ -85,9 +85,9 @@
 }
 
 #hex-viewer>code>div>div.highlighted {
-  background-color: #0c88;
+  background-color: #fcb;
 }
 
 #hex-viewer>code>div>div.temphighlighted {
-  background-color: #39b9f0 !important;
+  background-color: #aae2fa !important;
 }

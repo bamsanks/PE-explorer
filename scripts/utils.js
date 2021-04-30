@@ -110,6 +110,7 @@ var Utils = {
     var inputBox = cont.getElementsByTagName("input")[0];
     cont.style.visibility = "visible";
     inputBox.focus();
+    inputBox.select();
     inputBox.onkeydown = function(e) {
       if (e.key == "Enter") callback(Utils.ParseDecOrHex(inputBox.value));
       if (["Enter", "Escape"].includes(e.key)) cont.style.visibility = "hidden";
