@@ -22,6 +22,24 @@ var Formatters = {
     return Utils.CreateJumpLink(
       Formatters.Hex(value),
       value);
+  },
+
+  PEMagic: function(value) {
+    if (typeof value == "number") {
+      value = Utils.ToLEBytes(value);
+    } else if (value instanceof Array) {
+      value = Utils.ToUInt32(value);
+    } else {
+      throw("Unknown data type passed to formatter");
+    }
+    var hexValue = Formatters.Hex(value);
+    if (value == PE_OPTIONAL_MAGIC.PE32) {
+      return hexValue + " (32-bit)";
+    } else if (value == PE_OPTIONAL_MAGIC.PE32_PLUS) {
+      return hexValue + " (64-bit)";
+    } else {
+      return hexValue + " (unrecognised)";
+    }
   }
 }
 
@@ -59,9 +77,13 @@ var Utils = {
     return Number.parseInt(h, 16);
   },
 
-  ConvertToChar: function(val) {
+  ConvertToChar: function(val, wrapInTag = false) {
     if (val == 32) return "&nbsp;";
-    return (val > 32 && val < 127) ? String.fromCharCode(val) : ".";
+    var preTag = wrapInTag ? "<noprint>" : "";
+    var postTag = wrapInTag ? "</noprint>" : "";
+    return (val > 32 && val < 127) ?
+      String.fromCharCode(val) :
+      preTag + "." + postTag;
   },
 
   ToSignedByte: function(byte) {
@@ -123,6 +145,20 @@ var Utils = {
       s += String.fromCharCode(b);
     }
     return s;
+  },
+
+  DecodeUtf16: function(w) {
+    var a8 = new Uint8Array(w);
+    var a16 = new Uint16Array(a8.buffer);
+    for (let i = 0; i < a16.length; i++) {
+      // Ensure null-terminator applies
+      if (a16[i] == 0) {
+        a16 = a16.slice(0, i);
+        break;
+      }
+    }
+    return String.fromCharCode.apply(String, a16);
   }
+
 }
 

@@ -116,9 +116,9 @@ class Viewer {
   }
 
   resizeScroller() {
-    var numTotalLines = Math.ceil(this.data.Length / 16);
-    var numInvisibleLines = numTotalLines - this.numVisibleLines;
-    var invisibleHeight = numInvisibleLines * Viewer.SCROLL_TICK_PX;
+    this.numTotalLines = Math.ceil(this.data.Length / 16);
+    this.numInvisibleLines = this.numTotalLines - this.numVisibleLines;
+    var invisibleHeight = this.numInvisibleLines * Viewer.SCROLL_TICK_PX;
     var visibleHeight = this.scroller.clientHeight;
     var dummy = this.scroller.getElementsByTagName("div")[0];
     dummy.style.height = (invisibleHeight + visibleHeight) + "px";
@@ -136,7 +136,7 @@ class Viewer {
       for (let c = 0; c < nBytes; c++) {
         let cellVal = bytes[c];
         hexLine.getElementsByTagName("div")[c].innerHTML = Utils.DecToHex(cellVal);
-        txtLine.getElementsByTagName("div")[c].innerHTML = Utils.ConvertToChar(cellVal);
+        txtLine.getElementsByTagName("div")[c].innerHTML = Utils.ConvertToChar(cellVal, true);
       }
       for (let c = nBytes; c < 16; c++) {
         hexLine.getElementsByTagName("div")[c].innerHTML = "&nbsp;&nbsp;";
@@ -255,6 +255,31 @@ class Viewer {
       var scaleFactor = (e.deltaY % 150 == 0) ? 12 : 12; // Option to change factor for mouse vs trackpad
       this.scroller.scrollTo(null, this.scroller.scrollTop + e.deltaY * Viewer.SCROLL_TICK_PX / scaleFactor);
     }.bind(this);
+
+    var sizerBar = document.getElementById("sizer-bar");
+    var descPanel = document.getElementById("description-panel");
+    sizerBar.onmousedown = function(e) {
+      var startWidth = window.getComputedStyle(descPanel).getPropertyValue("width");
+      this.attributes.sizing = true;
+      this.attributes.startWidth = parseInt(startWidth.replace(/px$/, ""));
+      this.attributes.sizingStartX = e.x;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener("mousemove", function(e) {
+      if (sizerBar.attributes.sizing) {
+        var diffX = e.x - sizerBar.attributes.sizingStartX;
+        descPanel.style.width = sizerBar.attributes.startWidth + diffX + "px";
+      }
+    });
+    window.addEventListener("mouseup", function(e) {
+      sizerBar.attributes.sizing = false;
+    });
+
+  }
+
+  StartSizing() {
+
   }
 
   attachKeyEvents() {
@@ -266,6 +291,26 @@ class Viewer {
       } else if (e.keyCode == 71 && e.ctrlKey) {
         Utils.ShowJumpToWindow(x => { this.JumpTo(x) });
         e.preventDefault();
+      } else if (e.keyCode == 33 || e.keyCode == 34 ||  // Page up / down
+                 e.keyCode == 38 || e.keyCode == 40) {  // Arrow up / down
+        // This is a mess, I'm not that bothered
+        var shift = (e.keyCode & 12) > 0 ?                            // If arrow key...
+                    (2 - (e.keyCode & 4)) / 2 :                       // ...then only shift by one line...
+                    (1 - (e.keyCode & 1) * 2) * this.numVisibleLines; // ...otherwise shift by a page
+        var numTotalLines = Math.ceil(this.data.Length / 16);
+        var maxOffset = numTotalLines - this.numVisibleLines;
+        this.lineOffset += shift;
+        this.lineOffset = Math.max(0, Math.min(maxOffset, this.lineOffset));
+        // Hacky way of ensuring print happens when holding a key
+        setTimeout(() => {
+          if (this.lineOffset % 2 == 0) {
+            this.container.classList.remove("offset");
+          } else {
+            this.container.classList.add("offset");
+          }
+          this.Print();
+        }, 0);
+        
       }
     }.bind(this);
 
@@ -282,12 +327,8 @@ class Viewer {
   
   attachScrollEvents() {
     this.scroller.onscroll = function() {
-      //var scrollMax = this.scroller.scrollHeight - this.scroller.clientHeight;
-      //var scrollPerc = scrollMax == 0 ? 0 : this.scroller.scrollTop / scrollMax;
-      // TODO: Fix this... +2 is a hack
-      //var totalNumLines = Math.ceil(this.data.Length / 16) + 2;
-      //this.lineOffset = Math.floor((totalNumLines - this.numVisibleLines) * scrollPerc);
-      this.lineOffset = Math.floor(this.scroller.scrollTop / Viewer.SCROLL_TICK_PX);
+      var perc = this.scroller.scrollTop / (this.scroller.scrollHeight - this.scroller.clientHeight);
+      this.lineOffset = Math.round(this.numInvisibleLines * perc);
       if (this.lineOffset % 2 == 0) {
         this.container.classList.remove("offset");
       } else {

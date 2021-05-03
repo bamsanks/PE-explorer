@@ -165,6 +165,7 @@ class PEOptionalHeader {
       this.NumberOfRvaAndSizes = reader.ReadUInt32(true);
 
       this.directoryEntries = []; //new DataDirectoryEntry[NumberOfRvaAndSizes];
+      this.directoryEntries.toString = () => this.directoryEntries.join(", ");
 
       var directoryNames = [
         "Exports", "Imports", "Resources", "Exceptions",
@@ -188,7 +189,7 @@ class PEOptionalHeader {
       }
 
       
-      this.Magic.Formatter = Formatters.HexAndText;
+      this.Magic.Formatter = Formatters.PEMagic;
       this.AddressOfEntryPoint.Formatter = Formatters.Hex;
 
   }
@@ -561,7 +562,7 @@ class ResourceDataEntry {
   }
 
   Extract() {
-    this.reader.JumpTo(this.DataRVA, true, false);
+    this.reader.JumpTo(this.DataRVA, true, true);
     var data = this.reader.ReadBytes(this.Size);
     this.reader.JumpBack();
     return data;
@@ -670,3 +671,173 @@ class ExeFile {
   }
 
 }
+
+class VS_VERSIONINFO {
+
+    reader;
+    resourceSize;
+    valueDataSize;
+    valueType;
+    identifierString;
+    alignPadding;
+    version;
+    alignPadding;	
+    versionSubVals;
+  
+    constructor(reader, address) {
+      this.ReadFromStream(reader, address);
+    }
+  
+    ReadFromStream(reader, address) {
+      this.reader = reader;
+      if (address == null) address = reader.Position;
+      reader.JumpTo(address, true, false);
+      this.ResourceSize = reader.ReadUInt16();
+      this.valueDataSize = reader.ReadUInt32();
+      this.valueType;
+      this.identifierString = Utils.DecodeUtf16(reader.ReadBytes(32));
+      reader.ReadBytes(4 - reader.Position % 4); // Padding
+      this.version = new VS_FIXEDFILEINFO(reader);
+      reader.ReadBytes(4 - reader.Position % 4); // Padding
+      // this.versionSubVals = ... TODO!
+      reader.JumpBack();
+    }
+  
+  }
+
+class VS_FIXEDFILEINFO {
+  reader;
+
+  Signature;
+  StrucVersion;
+  FileVersionMS;
+  FileVersionLS;
+  ProductVersionMS;
+  ProductVersionLS;
+  FileFlagsMask;
+  FileFlags;
+  _fileOS;
+  get FileOS() { return this.DecodeFileOS(); };
+  FileType;
+  FileSubtype;
+  FileDateMS;
+  FileDateLS;
+
+  constructor(reader, address) {
+    this.ReadFromStream(reader, address);
+  }
+
+  ReadFromStream(reader, address) {
+    this.reader = reader;
+    if (address == null) address = reader.Position;
+    reader.JumpTo(address, true, false);
+
+    this.Signature = reader.ReadUInt32();
+    this.StrucVersion = reader.ReadUInt32();
+    this.FileVersionMS = reader.ReadUInt32();
+    this.FileVersionLS = reader.ReadUInt32();
+    this.ProductVersionMS = reader.ReadUInt32();
+    this.ProductVersionLS = reader.ReadUInt32();
+    this.FileFlagsMask = reader.ReadUInt32();
+    this.FileFlags = reader.ReadUInt32();
+    this._fileOS = reader.ReadUInt32();
+    this.FileType = reader.ReadUInt32();
+    this.FileSubtype = reader.ReadUInt32();
+    this.FileDateMS = reader.ReadUInt32();
+    this.FileDateLS = reader.ReadUInt32();
+    
+    reader.JumpBack();
+  }
+
+  DecodeFileOS() {
+    if (this._fileOS == 0) return "Unknown";
+    var os = [];
+    var b1 = (this._fileOS & 0xFF0000) >> 16;
+    var b2 = this._fileOS & 0xFF;
+    switch (b1) {
+      case 1: os.push("DOS"); break;
+      case 2: os.push("16-bit OS/2"); break;
+      case 3: os.push("32-bit OS/2"); break;
+      case 4: os.push("NT"); break;
+    }
+    switch (b2) {
+      case 1: os.push("16-bit Windows"); break;
+      case 2: os.push("16-bit Presentation Manager"); break;
+      case 3: os.push("32-bit Presentation Manager"); break;
+      case 4: os.push("32-bit Windows"); break;
+    }
+    return os.join(", ");
+  }
+
+}
+
+class MUIFILETYPE {
+  
+  _MUI_FILETYPE_NOT_LANGUAGE_NEUTRAL = 1;
+  _MUI_FILETYPE_LANGUAGE_NEUTRAL_MAIN = 2;
+  _MUI_FILETYPE_LANGUAGE_NEUTRAL_MUI = 4;
+  Value;
+
+  constructor(lType) {
+    this.Value = lType;
+  }
+
+  toString() {
+    switch(this.Value) {
+      case this._MUI_FILETYPE_NOT_LANGUAGE_NEUTRAL: 
+        return "Non-split resource file";
+      case this._MUI_FILETYPE_LANGUAGE_NEUTRAL_MAIN: 
+        return "Language-neutral main module";
+      case this._MUI_FILETYPE_LANGUAGE_NEUTRAL_MUI: 
+        return "Language-neutral MUI file";
+      default: 
+        return "Unknown";
+    }
+  }
+}
+
+class FILEMUIINFO
+{
+    Size;
+    Version;
+    FileType;
+    Checksum;
+    ServiceChecksum;
+    LanguageNameOffset;
+    TypeIDMainSize;
+    TypeIDMainOffset;
+    TypeNameMainOffset;
+    TypeIDMUISize;
+    TypeIDMUIOffset;
+    TypeNameMUIOffset;
+    Buffer;
+
+    constructor(reader, address) {
+      this.ReadFromStream(reader, address);
+    }
+  
+    ReadFromStream(reader, address) {
+      this.reader = reader;
+      if (address == null) address = reader.Position;
+      reader.JumpTo(address, true, false);
+  
+      if (reader.ReadUInt32() != 0xfecdfecd) throw("Invalid FILEMUIINFO signature!");
+      this.Size = reader.ReadUInt32();
+      this.Version = reader.ReadUInt32();
+      this.FileType = new MUIFILETYPE(reader.ReadUInt32());
+      this.Checksum = reader.ReadBytes(16);
+      this.ServiceChecksum = reader.ReadBytes(16);
+      this.LanguageNameOffset = reader.ReadUInt32();
+      this.TypeIDMainSize = reader.ReadUInt32();
+      this.TypeIDMainOffset = reader.ReadUInt32();
+      this.TypeNameMainOffset = reader.ReadUInt32();
+      this.TypeIDMUISize = reader.ReadUInt32();
+      this.TypeIDMUIOffset = reader.ReadUInt32();
+      this.TypeNameMUIOffset = reader.ReadUInt32();
+      this.Buffer = reader.ReadBytes(8);
+      
+      reader.JumpBack();
+    }
+
+    
+  }

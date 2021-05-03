@@ -1,3 +1,15 @@
+const resourceTypes = ["Unknown",
+  "CURSOR", "BITMAP", "ICON", "MENU", 
+  "DIALOG", "STRING", "FONTDIR", "FONT", 
+  "ACCELERATOR", "RCDATA", "MESSAGETABLE", "GROUP_CURSOR", 
+  "Unknown", 
+  "GROUP_ICON",
+  "Unknown",
+  "VERSION", "DLGINCLUDE",
+  "Unknown",
+  "PLUGPLAY", "VXD", "ANICURSOR", "ANIICON",
+  "HTML", "MANIFEST"];
+
 function handleDragOver(e) {
   e.preventDefault();
 }
@@ -41,15 +53,15 @@ function CreateTable(tableData) {
 }
 
 function CreateJumpLink(innerHTML, address, length = 1) {
+  if (!address) return innerHTML;
   var link = document.createElement("a");
-  //var js = "globals.viewer.JumpTo(" + address + ", length);";
   link.onclick = () => globals.viewer.JumpTo(address, length);
   link.setAttribute("href", "#B" + address);
   link.innerHTML = innerHTML;
   return link;
 }
 
-function showres(reflink) {
+function printres(reflink) {
   var path = reflink.attributes.attr.value;
   path = path.split(",");
   var item = globals.exeFile.Resources;
@@ -59,28 +71,81 @@ function showres(reflink) {
   console.log(item.Extract());
 }
 
-function CreateResourceTree(resourceDirectory, path = "") {
+function jumpres(reflink) {
+  var path = reflink.attributes.attr.value;
+  path = path.split(",");
+  var item = globals.exeFile.Resources;
+  for (let step of path) {
+    item = item.Entries[step].Child;
+  }
+  var addr = globals.exeFile._reader.MapAddress(item.DataRVA);
+  //var max = globals.viewer.numVisibleLines * 16;
+  globals.viewer.JumpTo(addr, 1); // Math.min(item.Size, max));
+}
+
+function saveres(reflink, extension = "") {
+  var path = reflink.attributes.attr.value;
+  path = path.split(",");
+  var item = globals.exeFile.Resources;
+  for (let step of path) {
+    item = item.Entries[step].Child;
+  }
+  var data = item.Extract();
+  var blob = new Blob([new Uint8Array(data)], {type: "octet/stream"}),
+                      url = window.URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  document.body.appendChild(a);
+  a.style = "display: none";
+  a.href = url;
+  a.download = "Resource" + extension;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+function GetExtension(refName) {
+  if (refName.toLowerCase() == "png") {
+    return ".png";
+  }
+}
+
+// ext is really lazy, try putting this in resource parsing if possible
+function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
   var htmlOut = "";
   if (resourceDirectory instanceof ResourceDirectoryTable) {
     htmlOut = "<ul>";
     let i = 0;
     for (let entry of resourceDirectory.Entries) {
+      htmlOut += "<li>\n";
+      if (level == 0) htmlOut += (entry.IsNamed ? entry.Name : resourceTypes[entry.ID]) + ":";
+      if (level == 1) htmlOut += "Resource " + (entry.IsNamed ? entry.Name : ("#" + entry.ID));
+      if (level == 2) htmlOut += "Language ID = " + entry.ID;
       newPath = path + (path == "" ? "" : ",") + (i++);
-      htmlOut += "<li>\n" + 
-        CreateResourceTree(entry.Child, newPath) +
-      "</li>\n";
+      
+      if (level == 0 && entry.IsNamed) ext = GetExtension(entry.Name);
+      htmlOut += CreateResourceTree(entry.Child, newPath, level + 1, ext);
+      htmlOut += "</li>\n";
     }
     htmlOut += "</ul>";
   } else if (resourceDirectory instanceof ResourceDataEntry) {
-    debugger;
-    htmlOut += "<li><a attr='" + path + "' href='#' onclick='showres(this)'>FILE</a></li>";
+    htmlOut += "<br><a attr='" + path + "' href='#' onclick='printres(this)'>Print in console</a>";
+    htmlOut += " | ";
+    htmlOut += "<a attr='" + path + "' href='#' onclick='jumpres(this)'>Jump to</a>";
+    htmlOut += " | ";
+    htmlOut += "<a attr='" + path + "' href='#' onclick='saveres(this, \"" + ext + "\")'>Download</a>";
   } else {
     throw("Unknown type");
   }
   return htmlOut;
 }
 
-function showSection(name) {
+function selectSectionTab(tabItem) {
+  var tabItems = document.getElementsByClassName("section-summary");
+  for (let item of tabItems) item.classList.remove("selected");
+  tabItem.classList.add("selected");
+}
+
+function showSection(tabItem, name) {
+  selectSectionTab(tabItem);
   var dest = document.getElementById("content");
   var htmlOut;
   switch(name) {
@@ -144,7 +209,11 @@ function showSection(name) {
       dest.innerHTML = htmlOut
       break;
     case "Resources":
-      htmlOut = CreateResourceTree(globals.exeFile.Resources);
+      if (globals.exeFile.Resources == null) {
+        htmlOut = "<i>No Resources</i>";
+      } else {
+        htmlOut = CreateResourceTree(globals.exeFile.Resources);
+      }
       dest.innerHTML = htmlOut;
       break;
     default:
@@ -175,10 +244,10 @@ function SummariseFile() {
 
   cont.innerHTML = "";
   for (let sectionName of sectionNames) {
-    var section = document.createElement("div");
+    let section = document.createElement("div");
     section.classList.add("section-summary");
     section.innerText = sectionName;
-    section.onclick = () => showSection(sectionName);
+    section.onclick = () => showSection(section, sectionName);
     cont.appendChild(section);
   }
 }

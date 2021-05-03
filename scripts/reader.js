@@ -163,4 +163,9 @@ class Reader {
     }
   }
 
+  PrintHex(start, end) {
+    var data = this._data.slice(start, end);
+    return Array.from(data).map(y => Utils.DecToHex(y)).join(" ");
+  }
+
 }

@@ -17,8 +17,9 @@
 }
 
 #hex-viewer code {
-  margin-right: 12px;
+  margin-right: 6px;
   box-sizing: content-box;
+  user-select: none;
 }
 
 #hex-viewer code div {
