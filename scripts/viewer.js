@@ -25,11 +25,34 @@ class Viewer {
 
   initialise() {
 
-    var viewer = this.container;
     this.container.innerHTML = "";
 
     this.setNumVisibleLines();
+    this.createViews();
+    this.createScroller();
 
+    this.attachMouseEvents();
+    this.attachKeyEvents();
+    this.attachScrollEvents();
+
+  }
+  
+  resize() {
+    this.setNumVisibleLines();
+    this.removeViews();
+    this.createViews();
+    this.resizeScroller();
+    this.Print();
+  }
+
+  removeViews() {
+    for (let id of ["lineNums", "hexChunk", "txtChunk"]) {
+      var el = document.getElementById(id);
+      el.parentElement.removeChild(el);
+    }
+  }
+
+  createViews() {
     var lineNums = document.createElement("code");
     var hexChunk = document.createElement("code");
     var txtChunk = document.createElement("code");
@@ -91,16 +114,9 @@ class Viewer {
 
     }
     
-    this.container.appendChild(lineNums);
-    this.container.appendChild(hexChunk);
-    this.container.appendChild(txtChunk);
-
-    this.createScroller();
-
-    this.attachMouseEvents();
-    this.attachKeyEvents();
-    this.attachScrollEvents();
-
+    this.container.prepend(txtChunk);
+    this.container.prepend(hexChunk);
+    this.container.prepend(lineNums);
   }
 
   createScroller() {
@@ -117,7 +133,7 @@ class Viewer {
 
   resizeScroller() {
     this.numTotalLines = Math.ceil(this.data.Length / 16);
-    this.numInvisibleLines = this.numTotalLines - this.numVisibleLines;
+    this.numInvisibleLines = Math.max(0, this.numTotalLines - this.numVisibleLines);
     var invisibleHeight = this.numInvisibleLines * Viewer.SCROLL_TICK_PX;
     var visibleHeight = this.scroller.clientHeight;
     var dummy = this.scroller.getElementsByTagName("div")[0];
@@ -329,7 +345,11 @@ class Viewer {
   
   attachScrollEvents() {
     this.scroller.onscroll = function() {
-      var perc = this.scroller.scrollTop / (this.scroller.scrollHeight - this.scroller.clientHeight);
+      var perc = 0;
+      if (this.scroller.scrollHeight != this.scroller.clientHeight) {
+        perc = this.scroller.scrollTop /
+          (this.scroller.scrollHeight - this.scroller.clientHeight);
+      }
       this.lineOffset = Math.round(this.numInvisibleLines * perc);
       if (this.lineOffset % 2 == 0) {
         this.container.classList.remove("offset");

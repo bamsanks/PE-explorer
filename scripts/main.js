@@ -114,16 +114,19 @@ function GetExtension(refName) {
 }
 
 // ext is really lazy, try putting this in resource parsing if possible
+// TODO: Tidy up the HTML creation
 function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
   var htmlOut = "";
   if (resourceDirectory instanceof ResourceDirectoryTable) {
-    htmlOut = "<ul>";
+    htmlOut = "<ul" + (level == 0 ? "" : " class=\"nested\"") + ">";
     let i = 0;
     for (let entry of resourceDirectory.Entries) {
       htmlOut += "<li>\n";
-      if (level == 0) htmlOut += (entry.IsNamed ? entry.Name : resourceTypes[entry.ID]) + ":";
+      htmlOut += "<span class=\"toggler closed\">";
+      if (level == 0) htmlOut += (entry.IsNamed ? entry.Name : resourceTypes[entry.ID]);
       if (level == 1) htmlOut += "Resource " + (entry.IsNamed ? entry.Name : ("#" + entry.ID));
       if (level == 2) htmlOut += "Language ID = " + entry.ID;
+      htmlOut += "</span>"
       newPath = path + (path == "" ? "" : ",") + (i++);
       
       if (level == 0 && entry.IsNamed) ext = GetExtension(entry.Name);
@@ -132,11 +135,13 @@ function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
     }
     htmlOut += "</ul>";
   } else if (resourceDirectory instanceof ResourceDataEntry) {
-    htmlOut += "<br><a attr='" + path + "' href='#' onclick='printres(this)'>Print in console</a>";
+    htmlOut += "<ul class=\"nested\">";
+    htmlOut += "<a attr='" + path + "' href='#' onclick='printres(this)'>Print in console</a>";
     htmlOut += " | ";
     htmlOut += "<a attr='" + path + "' href='#' onclick='jumpres(this)'>Jump to</a>";
     htmlOut += " | ";
     htmlOut += "<a attr='" + path + "' href='#' onclick='saveres(this, \"" + ext + "\")'>Download</a>";
+    htmlOut += "</ul>";
   } else {
     throw("Unknown type");
   }
@@ -147,6 +152,19 @@ function selectSectionTab(tabItem) {
   var tabItems = document.getElementsByClassName("section-summary");
   for (let item of tabItems) item.classList.remove("selected");
   tabItem.classList.add("selected");
+}
+
+function AttachTreeViewEvents(container) {
+  var toggler = container.getElementsByClassName("toggler");
+  //debugger;
+
+  for (let i = 0; i < toggler.length; i++) {
+    toggler[i].addEventListener("click", function() {
+      let el = this.parentElement.querySelector(".nested");
+      if (el) el.classList.toggle("active");
+      this.classList.toggle("closed");
+    });
+  }
 }
 
 function showSection(tabItem, name) {
@@ -220,6 +238,7 @@ function showSection(tabItem, name) {
         htmlOut = CreateResourceTree(globals.exeFile.Resources);
       }
       dest.innerHTML = htmlOut;
+      AttachTreeViewEvents(dest);
       break;
     default:
       var section = globals.exeFile.SectionHeaders

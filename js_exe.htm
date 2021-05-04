@@ -19,6 +19,7 @@
     <div id="app-body">
       <div id="splitter" class="splitter-horiz">
         <div id="description-panel" class="panel">
+          <div class="panel-header">Section explorer</div>
           <input type="file" style="display: none;" id="file-selector" accept=".exe,.dll">
           <div id="container">
             <div id="navbar">
@@ -31,7 +32,7 @@
             </div>
           </div>
         </div>
-        <div id="sizer-bar" style="">
+        <div id="sizer-bar">
           <div style="background-color: #ddd; width: 3px; height: 100%"></div>
         </div>
         <div id="hex-panel" class="panel">
@@ -50,11 +51,14 @@
 
     <script>
       function resize() {
-        var splitter = document.getElementById("splitter");
-        var idx = (window.innerHeight > window.innerWidth) ? 1 : 0;
-        var classes = ["splitter-horiz", "splitter-vert"];
-        splitter.classList.remove(classes[1-idx]);
-        splitter.classList.add(classes[idx]);
+        // var splitter = document.getElementById("splitter");
+        // var idx = (window.innerHeight > window.innerWidth) ? 1 : 0;
+        // var classes = ["splitter-horiz", "splitter-vert"];
+        // splitter.classList.remove(classes[1-idx]);
+        // splitter.classList.add(classes[idx]);
+        
+        // TODO: Ensure num lines etc are recalculated
+        globals.viewer.resize();
       }
       window.onresize = resize;
       window.addEventListener("load", resize);
