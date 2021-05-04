@@ -9,7 +9,7 @@
 
 #hex-viewer {
   display: flex;
-  margin-top: 20px;
+  
   font-size: 12px;
   cursor: default;
   height: 100%;

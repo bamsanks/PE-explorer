@@ -3,6 +3,7 @@
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/hex.css">
     <script type="text/javascript" src="scripts/test_file.js"></script>
+    <script type="text/javascript" src="scripts/resources.js"></script>
     <script type="text/javascript" src="scripts/utils.js"></script>
     <script type="text/javascript" src="scripts/reader.js"></script>
     <script type="text/javascript" src="scripts/consts.js"></script>
@@ -12,35 +13,38 @@
     <script type="text/javascript" src="scripts/main.js"></script>
   </head>
   <body>
-    <div id="splitter" class="splitter-horiz">
-      <div id="description-panel" class="panel">
-        <div id="header">
-          <input type="file" id="file-selector">
-        </div>
-        <div id="container">
-          <div id="navbar">
-            <div id="section_summaries">
-              
+    <div id="app-menu">
+      <div class="menu-item" onclick="ShowFilePicker()">Open File</div>
+    </div>
+    <div id="app-body">
+      <div id="splitter" class="splitter-horiz">
+        <div id="description-panel" class="panel">
+          <input type="file" style="display: none;" id="file-selector" accept=".exe,.dll">
+          <div id="container">
+            <div id="navbar">
+              <div id="section_summaries">
+                
+              </div>
+            </div>
+            <div id="content">
+
             </div>
           </div>
-          <div id="content">
+        </div>
+        <div id="sizer-bar" style="">
+          <div style="background-color: #ddd; width: 3px; height: 100%"></div>
+        </div>
+        <div id="hex-panel" class="panel">
+          <div id="hex-viewer">
 
           </div>
         </div>
       </div>
-      <div id="sizer-bar" style="padding: 0 4px 0 4px; cursor: ew-resize">
-        <div style="background-color: #ddd; width: 3px; height: 100%"></div>
-      </div>
-      <div id="hex-panel" class="panel">
-        <div id="hex-viewer">
 
+      <div id="jumpToContainer">
+        <div id="jumpToBox">
+          <input id="jumpToInput" placeholder="0xADDRESS">
         </div>
-      </div>
-    </div>
-
-    <div id="jumpToContainer">
-      <div id="jumpToBox">
-        <input id="jumpToInput" placeholder="0xADDRESS">
       </div>
     </div>
 

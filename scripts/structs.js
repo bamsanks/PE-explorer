@@ -547,6 +547,9 @@ class ResourceDataEntry {
   Size;
   Codepage;
 
+  Name;
+  Extension;
+
   constructor(reader, address) {
     this.ReadFromStream(reader, address);
   }
@@ -566,6 +569,19 @@ class ResourceDataEntry {
     var data = this.reader.ReadBytes(this.Size);
     this.reader.JumpBack();
     return data;
+  }
+
+  Download() {
+    var data = this.Extract();
+    var blob = new Blob([new Uint8Array(data)], {type: "octet/stream"});
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style = "display: none";
+    a.href = url;
+    a.download = (this.Name ?? "Resource") + extension;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 
 }
@@ -690,8 +706,8 @@ class VS_VERSIONINFO {
   
     ReadFromStream(reader, address) {
       this.reader = reader;
-      if (address == null) address = reader.Position;
-      reader.JumpTo(address, true, false);
+      // Only jump if address specified
+      if (address != null) reader.JumpTo(address, true, false);
       this.ResourceSize = reader.ReadUInt16();
       this.valueDataSize = reader.ReadUInt32();
       this.valueType;
@@ -700,7 +716,7 @@ class VS_VERSIONINFO {
       this.version = new VS_FIXEDFILEINFO(reader);
       reader.ReadBytes(4 - reader.Position % 4); // Padding
       // this.versionSubVals = ... TODO!
-      reader.JumpBack();
+      if (address != null) reader.JumpBack();
     }
   
   }
@@ -729,8 +745,8 @@ class VS_FIXEDFILEINFO {
 
   ReadFromStream(reader, address) {
     this.reader = reader;
-    if (address == null) address = reader.Position;
-    reader.JumpTo(address, true, false);
+    // Only jump if address specified
+    if (address != null) reader.JumpTo(address, true, false);
 
     this.Signature = reader.ReadUInt32();
     this.StrucVersion = reader.ReadUInt32();
@@ -746,7 +762,7 @@ class VS_FIXEDFILEINFO {
     this.FileDateMS = reader.ReadUInt32();
     this.FileDateLS = reader.ReadUInt32();
     
-    reader.JumpBack();
+    if (address != null) reader.JumpBack();
   }
 
   DecodeFileOS() {
@@ -817,9 +833,10 @@ class FILEMUIINFO
     }
   
     ReadFromStream(reader, address) {
+
       this.reader = reader;
-      if (address == null) address = reader.Position;
-      reader.JumpTo(address, true, false);
+      // Only jump if address specified
+      if (address != null) reader.JumpTo(address, true, false);
   
       if (reader.ReadUInt32() != 0xfecdfecd) throw("Invalid FILEMUIINFO signature!");
       this.Size = reader.ReadUInt32();
@@ -836,8 +853,10 @@ class FILEMUIINFO
       this.TypeNameMUIOffset = reader.ReadUInt32();
       this.Buffer = reader.ReadBytes(8);
       
-      reader.JumpBack();
+      if (address != null) reader.JumpBack();
     }
 
     
   }
+
+  

@@ -10,6 +10,10 @@ const resourceTypes = ["Unknown",
   "PLUGPLAY", "VXD", "ANICURSOR", "ANIICON",
   "HTML", "MANIFEST"];
 
+function ShowFilePicker() {
+  document.getElementById("file-selector").click();
+}
+
 function handleDragOver(e) {
   e.preventDefault();
 }
@@ -18,6 +22,7 @@ function handleDrop(e) {
   let dt = e.dataTransfer;
   let file = dt.files[0];
 
+  globals.viewer.JumpTo(0);
   readFile(file);
   e.preventDefault();
 }

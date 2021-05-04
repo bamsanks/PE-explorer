@@ -258,10 +258,12 @@ class Viewer {
 
     var sizerBar = document.getElementById("sizer-bar");
     var descPanel = document.getElementById("description-panel");
+    // TODO: Find a cleaner method if possible
     sizerBar.onmousedown = function(e) {
       var startWidth = window.getComputedStyle(descPanel).getPropertyValue("width");
       this.attributes.sizing = true;
-      this.attributes.startWidth = parseInt(startWidth.replace(/px$/, ""));
+      this.attributes.startWidth = parseInt(startWidth.replace(/px$/, "")) + 
+        descPanel.offsetWidth - descPanel.clientWidth;
       this.attributes.sizingStartX = e.x;
       e.stopPropagation();
       e.preventDefault();
@@ -285,7 +287,7 @@ class Viewer {
   attachKeyEvents() {
     document.body.onkeydown = function(e) {
       if (e.keyCode == 35) {
-        this.JumpTo(this.data.length-1);
+        this.JumpTo(this.data.Length-1);
       } else if (e.keyCode == 36) {
         this.JumpTo(0);
       } else if (e.keyCode == 71 && e.ctrlKey) {
