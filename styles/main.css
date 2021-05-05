@@ -211,6 +211,11 @@ noprint {
   padding-left: 20px;
 }
 
+.toggler {
+  display: block;
+  padding: 2px 0 2px 0;
+}
+
 .toggler::before {
   content: '-';
   font-family: 'Courier New';
@@ -225,6 +230,9 @@ noprint {
 
 .nested {
   display: none;
+  padding-left: 15px;
+  margin-left: 2px;
+  border-left: 1px dashed #bbb;
 }
 
 .active {

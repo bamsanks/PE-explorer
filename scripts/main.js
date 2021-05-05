@@ -118,30 +118,30 @@ function GetExtension(refName) {
 function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
   var htmlOut = "";
   if (resourceDirectory instanceof ResourceDirectoryTable) {
-    htmlOut = "<ul" + (level == 0 ? "" : " class=\"nested\"") + ">";
+    htmlOut = "<div" + (level == 0 ? "" : " class=\"nested\"") + ">";
     let i = 0;
     for (let entry of resourceDirectory.Entries) {
-      htmlOut += "<li>\n";
+      htmlOut += "<div>\n";
       htmlOut += "<span class=\"toggler closed\">";
       if (level == 0) htmlOut += (entry.IsNamed ? entry.Name : resourceTypes[entry.ID]);
-      if (level == 1) htmlOut += "Resource " + (entry.IsNamed ? entry.Name : ("#" + entry.ID));
+      if (level == 1) htmlOut += (entry.IsNamed ? entry.Name : ("#" + entry.ID));
       if (level == 2) htmlOut += "Language ID = " + entry.ID;
       htmlOut += "</span>"
       newPath = path + (path == "" ? "" : ",") + (i++);
       
       if (level == 0 && entry.IsNamed) ext = GetExtension(entry.Name);
       htmlOut += CreateResourceTree(entry.Child, newPath, level + 1, ext);
-      htmlOut += "</li>\n";
+      htmlOut += "</div>\n";
     }
-    htmlOut += "</ul>";
+    htmlOut += "</div>";
   } else if (resourceDirectory instanceof ResourceDataEntry) {
-    htmlOut += "<ul class=\"nested\">";
+    htmlOut += "<div class=\"nested\">";
     htmlOut += "<a attr='" + path + "' href='#' onclick='printres(this)'>Print in console</a>";
     htmlOut += " | ";
     htmlOut += "<a attr='" + path + "' href='#' onclick='jumpres(this)'>Jump to</a>";
     htmlOut += " | ";
     htmlOut += "<a attr='" + path + "' href='#' onclick='saveres(this, \"" + ext + "\")'>Download</a>";
-    htmlOut += "</ul>";
+    htmlOut += "</div>";
   } else {
     throw("Unknown type");
   }
