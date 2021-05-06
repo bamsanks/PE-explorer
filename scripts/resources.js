@@ -13,7 +13,7 @@ var ResourceHandlers = {
 
   Default: function() {
     var resource = this;
-    return resource.Extract();
+    return Utils.BytesToString(resource.Extract());
   },
 
   PNG: function() {

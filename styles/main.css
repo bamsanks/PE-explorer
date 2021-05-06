@@ -44,10 +44,10 @@ table {
   font-size: 10px;
 }
 
-td {
+#content td {
   padding-right: 20px;
 }
-td:last-child {
+#content td:last-child {
   width: 100%;
 }
 
@@ -238,4 +238,48 @@ noprint {
 
 .active {
   display: block;
+}
+
+#find-content {
+  width: 100%;
+  font-size: 10px;
+  margin: 0 12px 0 12px;
+  user-select: none;
+}
+
+#find-content input[type=text] {
+  width: 100%;
+  border: 1px solid #555;
+  border-radius: 2px;
+  font-size: 10px;
+  padding: 4px;
+  margin: 3px;
+}
+#find-content input[type=checkbox] {
+  vertical-align: bottom;
+  margin: 0;
+  margin-right: 5px;
+}
+#find-content table {
+  white-space: nowrap;
+  width: 100%;
+}
+#find-content div {
+  margin: 8px 0 8px 0;
+}
+#find-content #find-bottom-section {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 0;
+}
+#find-content #find-response {
+  margin: 0;
+}
+#find-bottom-section p {
+  margin-bottom: 8px;
+}
+#find-content #find-settings {
+  margin: 0;
 }

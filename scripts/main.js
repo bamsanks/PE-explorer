@@ -77,7 +77,7 @@ function viewres(reflink) {
   } else {
     var resourceContent = document.createElement("textarea");
     resourceContent.readOnly = true;
-    resourceContent.value = item.Extract().map((x) => { return "0x" + Utils.DecToHex(x)}).join(", ");
+    resourceContent.value = item.ResourceHandler();
   }
 
   // TODO: Move this to the Window class
@@ -141,7 +141,7 @@ function GetExtension(refName) {
 function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
   var htmlOut = "";
   if (resourceDirectory instanceof ResourceDirectoryTable) {
-    htmlOut = "<div" + (level == 0 ? "" : " class=\"nested\"") + ">";
+    htmlOut = "<div" + (level == 0 ? "" : " class=\"nested active\"") + ">";
     let i = 0;
     for (let entry of resourceDirectory.Entries) {
       htmlOut += "<div>\n";
@@ -158,7 +158,7 @@ function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
     }
     htmlOut += "</div>";
   } else if (resourceDirectory instanceof ResourceDataEntry) {
-    htmlOut += "<div class=\"nested\">";
+    htmlOut += "<div class=\"nested active\">";
     htmlOut += "<a attr='" + path + "' href='#' onclick='printres(this)'>Print in console</a>";
     htmlOut += " | ";
     htmlOut += "<a attr='" + path + "' href='#' onclick='jumpres(this)'>Jump to</a>";

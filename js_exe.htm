@@ -18,7 +18,8 @@
   </head>
   <body>
     <div id="app-menu">
-      <div class="menu-item" onclick="ShowFilePicker()">Open File</div>
+      <div class="menu-item" onclick="ShowFilePicker()" title="Open (Ctrl+O)">Open File</div>
+      <div class="menu-item" onclick="windows.finder.Show()" title="Find (Ctrl+F)">Find in file</div>
     </div>
     <div id="app-body">
       <div id="splitter" class="splitter-horiz">
@@ -49,6 +50,41 @@
       <div id="jumpToContainer">
         <div id="jumpToBox">
           <input id="jumpToInput" placeholder="0xADDRESS">
+        </div>
+      </div>
+
+      <div id="find-content">
+        <table>
+          <tr>
+            <td>Find:</td>
+            <td><input id="find-text-input" type="text"></td>
+          </tr>
+          <tr>
+            <td>Search from:</td>
+            <td>
+              <input id="find-search-from" type="text" placeholder="0xADDRESS">
+            </td>
+          </tr>
+        </table>
+        
+        <div id="find-bottom-section">
+          <div id="find-settings">
+            <div>
+              <input type="checkbox" name="find-ignore-case" id="find-ignore-case">
+              <label for="find-ignore-case">Ignore case</label>
+            </div>
+            <div>
+              <input type="checkbox" name="find-wrap" id="find-wrap" checked>
+              <label for="find-wrap">Wrap around</label>
+            </div>
+            <div>
+              <input type="checkbox" name="find-update-searchfrom" id="find-update-searchfrom" checked>
+              <label for="find-update-searchfrom">Auto-increment "Search from"</label>
+            </div>
+          </div>
+          <div id="find-response">
+            
+          </div>
         </div>
       </div>
     </div>

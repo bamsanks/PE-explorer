@@ -15,11 +15,80 @@ function LoadCssFile(path) {
   document.getElementsByTagName("head")[0].appendChild(link);
 }
 
+function SetWindowFocus() {
+  var z = this.ZIndex;
+  for (let id of Object.keys(windows)) {
+    let window = windows[id];
+    if (window.ZIndex > z) {
+      window.ZIndex -= 100;
+      this.ZIndex += 100;
+    }
+  }
+}
+
+function DoFind() {
+  var findText = document.getElementById("find-text-input");
+  var searchFrom = document.getElementById("find-search-from");
+  var ignoreCaseCheckbox = document.getElementById("find-ignore-case");
+  var wrapSearch = document.getElementById("find-wrap");
+  var findResponse = document.getElementById("find-response");
+  var updateSearchfrom = document.getElementById("find-update-searchfrom");
+  var findTextStr = findText.value;
+  var searchFromInt = Utils.HexToDec(searchFrom.value);
+  if (!isFinite(searchFromInt)) searchFromInt = 0;
+  var pos = globals.exeFile.Find(findTextStr, ignoreCaseCheckbox.checked, searchFromInt, wrapSearch.checked);
+  if (pos != -1) {
+    globals.viewer.JumpTo(pos, findTextStr.length, searchFromInt);
+    searchFromInt = pos + 1;
+  }
+  if (updateSearchfrom.checked) {
+    searchFrom.value = "0x" + Utils.DecToHex(searchFromInt, 8);
+  }
+
+  if (pos == -1) {
+    findResponse.innerHTML = "<p style='color: #f40;'>No results found</p>";
+  } else {
+    findResponse.innerHTML = "<p style='color: #190;'>Found at 0x" + Utils.DecToHex(pos, 8) + "</p>";
+  }
+}
+
+function CreateFindContent() {
+  var findText = document.getElementById("find-text-input");
+  var searchFrom = document.getElementById("find-search-from");
+  findText.onkeydown = (e) => { if (e.key == "Enter") DoFind() };
+  searchFrom.onkeydown = (e) => { if (e.key == "Enter") DoFind() };
+  return document.getElementById("find-content");
+}
+
+// TODO: Move this to the main script
 var windows = {};
 window.addEventListener("load", function() {
   windows.resourceViewer = new Window();
   windows.resourceViewer.Hide();
   windows.resourceViewer.Title = "Resource Viewer";
+  windows.resourceViewer.ZIndex = 100;
+  windows.resourceViewer.FocusCallback = SetWindowFocus;
+
+  windows.finder = new Window("Find", 300, 170, false);
+  windows.finder.Sizeable = false;
+  windows.finder.ZIndex = 200;
+  windows.finder.FocusCallback = SetWindowFocus;
+  document.body.addEventListener("keydown", function(e) {
+    if (e.ctrlKey) {
+      if (e.key == "f") {
+        windows.finder.Show();
+        windows.finder.Focus();
+        var findTextBox = document.getElementById("find-text-input");
+        findTextBox.focus();
+        findTextBox.select();
+        e.preventDefault();
+      } else if (e.key == "o") {
+        ShowFilePicker();
+        e.preventDefault();
+      }
+    }
+  });
+  windows.finder.DomBodyContent.appendChild(CreateFindContent());
 });
 
 class Window {
@@ -29,11 +98,13 @@ class Window {
   DomBody;
   DomTitleButtons = {};
   DomTitleText;
+  FocusCallback;
   
   #domSizerLeft;
   #domSizerRight;
   #domSizerBottom;
-  #domSizerBottomRight
+  #domSizerBottomRight;
+  #sizeable = true;
 
   get Visible() { return this.#visible };
   set Visible(value) {
@@ -54,6 +125,20 @@ class Window {
     this.#title = value;
     this.DomTitleText.innerText = value;
   }
+  get Sizeable() { return this.#sizeable; }
+  set Sizeable(value) {
+    this.#sizeable = value;
+    var sizers = this.DomWindow.getElementsByClassName("window-sizer");
+    for (let sizer of sizers) {
+      sizer.style.display = value ? "flex" : "none";
+    }
+    this.DomBody.style.padding = (value) ? "5px 0 0 0" : "5px";
+  }
+  get ZIndex() { return this.#zIndex; }
+  set ZIndex(value) {
+    this.#zIndex = value;
+    this.DomWindow.style.zIndex = value; 
+  }
 
   #dragMouseStart;
   #dragWindowStart;
@@ -64,6 +149,7 @@ class Window {
   #width;
   #height;
   #visible;
+  #zIndex;
   
   constructor(title = "", width = 300, height = 150, visible = true) {
     this.#createWindow();
@@ -74,6 +160,8 @@ class Window {
     // Centre the window
     this.DomWindow.style.left = "calc(50% - " + width / 2 + "px)";
     this.DomWindow.style.top  = "calc(50% - " + height / 2 + "px)";
+    this.DomWindow.style.minWidth = "150px";
+    this.DomWindow.style.minHeight = "80px";
   }
 
   #createDivWithin(parent, classes = []) {
@@ -85,12 +173,12 @@ class Window {
   }
 
   #createWindow() {
-    this.DomWindow = document.createElement("div");
-    this.DomWindow.classList.add("window");
-    if (this.Visible) this.DomWindow.classList.add("visible");
+    var _this = this;
+    this.DomWindow = this.#createDivWithin(document.body, "window");
+    if (this.Visible) this.Show();
     this.#createHeader();
     this.#createBody();
-    document.body.appendChild(this.DomWindow);
+    this.DomWindow.addEventListener("mousedown", () => _this.Focus());
   }
 
   #createHeader() {
@@ -217,6 +305,9 @@ class Window {
   }
   Toggle() {
     this.Visible = !this.Visible;
+  }
+  Focus() {
+    if (this.FocusCallback) this.FocusCallback.bind(this)();
   }
 
 }

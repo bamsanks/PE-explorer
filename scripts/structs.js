@@ -690,16 +690,35 @@ class ExeFile {
     return s[0];
   }
 
-  Find(data, start = 0) {
+  Find(data, ignoreCase = false, start = 0, wrap = false) {
     if (typeof data === "string") {
-      data = data.split("").map(x => x.charCodeAt(0))
+      var explode = (s) => s.split("").map(x => x.charCodeAt(0));
+      var ldata = explode(data.toLowerCase());
+      var udata = explode(data.toUpperCase());
+      data = explode(data);
     }
     var len = this._reader._data.length - data.length;
     for (let i = start; i < len; i++) {
       let j = 0;
-      while (this._reader._data[i+j] == data[j]) {
-        j++;
-        if (j == data.length) return i;
+      let bt = this._reader._data[i+j];
+      if (ignoreCase) {
+        while (bt == ldata[j] || bt == udata[j]) {
+          j++;
+          if (j == data.length) return i;
+          bt = this._reader._data[i+j];
+        }
+      } else {
+        while (bt == data[j]) {
+          j++;
+          if (j == data.length) return i;
+          bt = this._reader._data[i+j];
+        }
+      }
+      // If search wraps around, go again up until the start point 
+      if (wrap && i == (len - 1)) {
+        i = 0;
+        len = start;
+        wrap = false;
       }
     }
     return -1;
