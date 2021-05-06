@@ -18,8 +18,8 @@
   </head>
   <body>
     <div id="app-menu">
-      <div class="menu-item" onclick="ShowFilePicker()" title="Open (Ctrl+O)">Open File</div>
-      <div class="menu-item" onclick="windows.finder.Show()" title="Find (Ctrl+F)">Find in file</div>
+      <div class="menu-item" id="open-btn" onclick="ShowFilePicker()" title="Open (Ctrl+O)">Open File</div>
+      <div class="menu-item" id="find-btn" onclick="windows.finder.Show()" title="Find (Ctrl+F)" style="display: none;">Find in File</div>
     </div>
     <div id="app-body">
       <div id="splitter" class="splitter-horiz">

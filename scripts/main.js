@@ -17,6 +17,7 @@ function handleDrop(e) {
 }
 
 function OpenExe(data) {
+  document.getElementById("find-btn").style.display = "block";
   const file = new ExeFile(data);
 
   const machine = new Machine(file._reader);
