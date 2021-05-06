@@ -1,5 +1,10 @@
+:root {
+  --title-height: 24px;
+}
+
 .window {
   display: none; /* Hidden by default */
+  flex-direction: column;
   position: absolute;
   width: 300px;
   height: 150px;
@@ -13,13 +18,18 @@
   display: flex;
 }
 
-.window .header {
+.window-title-bar {
   display: flex;
+  flex-direction: row;
   flex-shrink: 0;
+  align-items: center;
+  position: absolute;
+  left: -0.333px;
+  top: -0.333px;
   box-sizing: border-box;
-  width: 100%;
-  height: 24px;
-  background-color: #aaa;
+  width: calc(100% + 0.667px);
+  height: var(--title-height);
+  background-color: #d9d9d9;
   user-select: none;
   padding-left: 5px;
   border: 1px solid #eee;
@@ -27,15 +37,82 @@
   border-radius: 4px 4px 0 0;
 }
 
+.window-title-text {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 9;
+}
+
 .window-title-button {
   height: 10px;
   width: 10px;
   border-radius: 50%;
   display: inline-block;
+  z-index: 10;
 }
 .window-close {
   background-color: #e9605d;
   border: 1px solid #b9504d;
 }
+.window-close:hover {
+  background-color: #f9706d;
+}
 
-.window
+.window-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  border-top: 1px solid #eee;
+  margin-top: calc(var(--title-height) - 0.333px);
+  padding-top: 5px;
+  outline: none;
+  overflow: hidden;
+}
+
+.window-body-mainrow {
+  display: flex;
+  flex-grow: 1;
+}
+
+.window-body-content {
+  display: flex;
+  flex-grow: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.window textarea {
+  border: 1px solid #aaa;
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  resize: none;
+  font-size: 10px;
+}
+
+.window-sizer {
+  display: flex;
+  user-select: none;
+}
+
+.window-sizer.sizer-left, .window-sizer.sizer-right {
+  width: 5px;
+  cursor: ew-resize;
+}
+
+.window-sizer.sizer-bottom {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.window-sizer.sizer-bottom-right {
+  display: flex;
+  width: 5px;
+  height: 5px;
+  cursor: nwse-resize;
+}

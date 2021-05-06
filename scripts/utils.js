@@ -146,6 +146,14 @@ var Utils = {
     }
     return s;
   },
+  
+  StringToBytes: function(str) {
+    var b = [];
+    for (let i = 0; i < str.length; i++) {
+      b.push(str.charCodeAt(i));
+    }
+    return b;
+  },
 
   DecodeUtf16: function(w) {
     var a8 = new Uint8Array(w);

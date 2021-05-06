@@ -1,3 +1,15 @@
+const resourceTypes = ["Unknown",
+  "Cursor", "Bitmap", "Icon", "Menu", 
+  "Dialog", "String", "Font Directory", "Font", 
+  "Accelerator", "RC Data", "Message Table", "Group Cursor", 
+  "Unknown", 
+  "Group Icon",
+  "Unknown",
+  "Version", "Dialog Include",
+  "Unknown",
+  "Plug&Play", "VXD", "Animated Cursor", "Animated Icon",
+  "HTML", "Manifest"];
+
 class Range {
   _size;
 
@@ -469,7 +481,12 @@ class ExportSection {
 
 class ResourceDirectoryTable {
 
-  constructor(reader, address, resourceBaseAddress) {
+  NestLevel;
+  ResourceType;
+
+  constructor(reader, address, resourceBaseAddress, nestLevel = 0, resourceType = "Unknown") {
+    this.NestLevel = nestLevel;
+    this.ResourceType = resourceType;
     if (!resourceBaseAddress) resourceBaseAddress = address;
     this.ReadFromStream(reader, address, resourceBaseAddress);
   }
@@ -484,10 +501,10 @@ class ResourceDirectoryTable {
     this.NumberOfIDEntries = reader.ReadUInt16();
     this.Entries = [];
     for (let i = 0; i < this.NumberOfNameEntries; i++) {
-      this.Entries.push(new ResourceDirectoryEntry(reader, resourceBaseAddress));
+      this.Entries.push(new ResourceDirectoryEntry(reader, resourceBaseAddress, this.NestLevel, this.ResourceType));
     }
     for (let i = 0; i < this.NumberOfIDEntries; i++) {
-      this.Entries.push(new ResourceDirectoryEntry(reader, resourceBaseAddress));
+      this.Entries.push(new ResourceDirectoryEntry(reader, resourceBaseAddress, this.NestLevel, this.ResourceType));
     }
     reader.JumpBack();
   }
@@ -501,8 +518,12 @@ class ResourceDirectoryEntry {
   ID;
   IsLeaf;
   Child;
+  NestLevel;
+  ResourceType;
 
-  constructor(reader, resourceBaseAddress) {
+  constructor(reader, resourceBaseAddress, nestLevel = 0, resourceType = "Unknown") {
+    this.NestLevel = nestLevel;
+    this.ResourceType = resourceType;
     this.ReadFromStream(reader, resourceBaseAddress);
   }
 
@@ -514,9 +535,7 @@ class ResourceDirectoryEntry {
       strBytes.push(reader.ReadByte());
     }
     reader.JumpBack();
-    var enc = new TextDecoder("utf-16");
-    var arr = new Uint8Array(strBytes);
-    return enc.decode(arr);
+    return Utils.DecodeUtf16(strBytes);
   }
 
   ReadFromStream(reader, resourceBaseAddress) {
@@ -530,14 +549,20 @@ class ResourceDirectoryEntry {
     } else {
       this.ID = id;
     }
+
+    // Level 0 is apparently special, and determines the type of resource
+    if (this.NestLevel == 0) {
+      this.ResourceType = this.IsNamed ? this.Name : resourceTypes[this.ID];
+    }
     
     var dataAddress = reader.ReadUInt32();
     this.IsLeaf = dataAddress < HIGH_BIT;
     if (dataAddress >= HIGH_BIT) dataAddress -= HIGH_BIT;
     this.Child = this.IsLeaf ?
-      new ResourceDataEntry(reader, resourceBaseAddress + dataAddress) :
-      new ResourceDirectoryTable(reader, resourceBaseAddress + dataAddress, resourceBaseAddress);
+      new ResourceDataEntry(reader, resourceBaseAddress + dataAddress, this.ResourceType) :
+      new ResourceDirectoryTable(reader, resourceBaseAddress + dataAddress, resourceBaseAddress, this.NestLevel + 1, this.ResourceType);
   }
+
 }
 
 class ResourceDataEntry {
@@ -549,9 +574,15 @@ class ResourceDataEntry {
 
   Name;
   Extension;
+  ResourceHandler;
 
-  constructor(reader, address) {
+  constructor(reader, address, resourceType = "Unknown") {
     this.ReadFromStream(reader, address);
+    this.ResourceType = resourceType;
+    
+    var resourceHandler = ResourceHandlers[resourceType];
+    this.ResourceHandler = resourceHandler ?? ResourceHandlers.Default;
+    this.ResourceHandler.bind(this);
   }
 
   ReadFromStream(reader, address) {

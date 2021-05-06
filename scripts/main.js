@@ -1,15 +1,3 @@
-const resourceTypes = ["Unknown",
-  "CURSOR", "BITMAP", "ICON", "MENU", 
-  "DIALOG", "STRING", "FONTDIR", "FONT", 
-  "ACCELERATOR", "RCDATA", "MESSAGETABLE", "GROUP_CURSOR", 
-  "Unknown", 
-  "GROUP_ICON",
-  "Unknown",
-  "VERSION", "DLGINCLUDE",
-  "Unknown",
-  "PLUGPLAY", "VXD", "ANICURSOR", "ANIICON",
-  "HTML", "MANIFEST"];
-
 function ShowFilePicker() {
   document.getElementById("file-selector").click();
 }
@@ -24,6 +12,7 @@ function handleDrop(e) {
 
   globals.viewer.JumpTo(0);
   readFile(file);
+  clearSectionContent();
   e.preventDefault();
 }
 
@@ -64,6 +53,40 @@ function CreateJumpLink(innerHTML, address, length = 1) {
   link.setAttribute("href", "#B" + address);
   link.innerHTML = innerHTML;
   return link;
+}
+
+function viewres(reflink) {
+  var path = reflink.attributes.attr.value;
+  path = path.split(",");
+  var item = globals.exeFile.Resources;
+  for (let step of path) {
+    item = item.Entries[step].Child;
+  }
+
+  var resourceContent;
+  if (item.ResourceType == "String") {
+    resourceContent = document.createElement("textarea");
+    resourceContent.readOnly = true;
+    resourceContent.value = item.ResourceHandler();
+  } else if (item.ResourceType == "PNG") {
+    resourceContent = item.ResourceHandler();
+  } else if (item.ResourceType == "Bitmap") {
+    resourceContent = item.ResourceHandler();
+  } else if (item.ResourceType == "Cursor") {
+    resourceContent = item.ResourceHandler();
+  } else {
+    var resourceContent = document.createElement("textarea");
+    resourceContent.readOnly = true;
+    resourceContent.value = item.Extract().map((x) => { return "0x" + Utils.DecToHex(x)}).join(", ");
+  }
+
+  // TODO: Move this to the Window class
+  var oldNode = windows.resourceViewer.DomBodyContent;
+  windows.resourceViewer.DomBodyContent = oldNode.cloneNode(false);
+  oldNode.parentNode.replaceChild(windows.resourceViewer.DomBodyContent, oldNode);
+  windows.resourceViewer.DomBodyContent.appendChild(resourceContent);
+  windows.resourceViewer.Show();
+
 }
 
 function printres(reflink) {
@@ -141,6 +164,8 @@ function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
     htmlOut += "<a attr='" + path + "' href='#' onclick='jumpres(this)'>Jump to</a>";
     htmlOut += " | ";
     htmlOut += "<a attr='" + path + "' href='#' onclick='saveres(this, \"" + ext + "\")'>Download</a>";
+    htmlOut += " | ";
+    htmlOut += "<a attr='" + path + "' href='#' onclick='viewres(this)'>View</a>";
     htmlOut += "</div>";
   } else {
     throw("Unknown type");
@@ -167,8 +192,14 @@ function AttachTreeViewEvents(container) {
   }
 }
 
+function clearSectionContent() {
+  var dest = document.getElementById("content");
+  dest.innerHTML = "";
+}
+
 function showSection(tabItem, name) {
   selectSectionTab(tabItem);
+  clearSectionContent();
   var dest = document.getElementById("content");
   var htmlOut;
   switch(name) {
@@ -180,7 +211,7 @@ function showSection(tabItem, name) {
         let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
         tableData.push([linkedKey, field?.toString()]);
       }
-      dest.innerHTML = "";
+      
       dest.appendChild(CreateTable(tableData));
       break;
     case "PE Header":
@@ -191,7 +222,7 @@ function showSection(tabItem, name) {
         let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
         tableData.push([linkedKey, field.toString()]);
       }
-      dest.innerHTML = "";
+      
       dest.appendChild(CreateTable(tableData));
       break;
     case "PE Optional Header":
@@ -202,7 +233,7 @@ function showSection(tabItem, name) {
         let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
         tableData.push([linkedKey, field.toString()]);
       }
-      dest.innerHTML = "";
+      
       dest.appendChild(CreateTable(tableData));
       break;
     case "Imports":
@@ -250,7 +281,7 @@ function showSection(tabItem, name) {
           let linkedKey = field ? CreateJumpLink(key, field.Address, field.Length) : key;
           tableData.push([linkedKey, field.toString()]);
         }
-        dest.innerHTML = "";
+        
         dest.appendChild(CreateTable(tableData));
         break;
   }
@@ -302,6 +333,7 @@ window.onload = function() {
   fileSelector.addEventListener('change', (event) => {
     const fileList = event.target.files;
     readFile(fileList[0]);
+    clearSectionContent();
   });
 
   document.body.ondragover = handleDragOver;
