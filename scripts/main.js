@@ -47,8 +47,10 @@ function CreateTable(tableData) {
   return table;
 }
 
-function CreateJumpLink(innerHTML, address, length = 1) {
+function CreateJumpLink(innerHTML, address, length = 1, mapped = false) {
   if (!address) return innerHTML;
+  // TODO: revise
+  if (mapped) address = globals.exeFile._reader.MapAddress(address);
   var link = document.createElement("a");
   link.onclick = () => globals.viewer.JumpTo(address, length);
   link.setAttribute("href", "#B" + address);
@@ -64,22 +66,7 @@ function viewres(reflink) {
     item = item.Entries[step].Child;
   }
 
-  var resourceContent;
-  if (item.ResourceType == "String") {
-    resourceContent = document.createElement("textarea");
-    resourceContent.readOnly = true;
-    resourceContent.value = item.ResourceHandler();
-  } else if (item.ResourceType == "PNG") {
-    resourceContent = item.ResourceHandler();
-  } else if (item.ResourceType == "Bitmap") {
-    resourceContent = item.ResourceHandler();
-  } else if (item.ResourceType == "Cursor") {
-    resourceContent = item.ResourceHandler();
-  } else {
-    var resourceContent = document.createElement("textarea");
-    resourceContent.readOnly = true;
-    resourceContent.value = item.ResourceHandler();
-  }
+  var resourceContent = item.ResourceHandler();
 
   // TODO: Move this to the Window class
   var oldNode = windows.resourceViewer.DomBodyContent;
@@ -146,7 +133,7 @@ function CreateResourceTree(resourceDirectory, path = "", level = 0, ext = "") {
     let i = 0;
     for (let entry of resourceDirectory.Entries) {
       htmlOut += "<div>\n";
-      htmlOut += "<span class=\"toggler closed\">";
+      htmlOut += "<span class=\"toggler\">";
       if (level == 0) htmlOut += (entry.IsNamed ? entry.Name : resourceTypes[entry.ID]);
       if (level == 1) htmlOut += (entry.IsNamed ? entry.Name : ("#" + entry.ID));
       if (level == 2) htmlOut += "Language ID = " + entry.ID;
@@ -313,6 +300,7 @@ var globals = { exeFile: null };
 function readFile(file) {
   if (!file) return;
   const reader = new FileReader();
+  document.title = `Executable Explorer [${file.name}]`;
   reader.addEventListener('load', (event) => {
     const view = new Uint8Array(reader.result);
     globals.exeFile = OpenExe(view);
@@ -340,6 +328,7 @@ window.onload = function() {
   document.body.ondragover = handleDragOver;
   document.body.ondrop = handleDrop;
   globals.exeFile = OpenExe(exeData);
+  document.title = `Executable Explorer [${testFileName}]`;
 
   globals.viewer = new Viewer(globals.exeFile._reader, getViewer());
   globals.viewer.Print();

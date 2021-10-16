@@ -79,6 +79,7 @@ class MZHeader {
       this.PEHeaderStart = reader.ReadUInt32(true);
 
       this.Signature.Formatter = Utils.BytesToString;
+      this.PEHeaderStart.Formatter = Formatters.Address;
   }
 
 }
@@ -107,6 +108,7 @@ class PEHeader {
     this.Characteristics = reader.ReadUInt16(true);
 
     this.Magic.Formatter = Formatters.HexAndText;
+    this.TimeDateStamp.Formatter = Formatters.UnixTimestamp;
   }
 }
 
@@ -138,19 +140,19 @@ class PEOptionalHeader {
       var uintMagic = Utils.ToUInt32(this.Magic.Value);
 
       var magicKnown =
-        uintMagic == PE_OPTIONAL_MAGIC.PE32 ||
-        uintMagic == PE_OPTIONAL_MAGIC.PE32_PLUS;
+        uintMagic == Consts.PE_OPTIONAL_MAGIC.PE32 ||
+        uintMagic == Consts.PE_OPTIONAL_MAGIC.PE32_PLUS;
 
       if (!magicKnown) throw("Unknown magic number in PE optional header");
 
-      var bit32 = uintMagic == PE_OPTIONAL_MAGIC.PE32;
+      var bit32 = uintMagic == Consts.PE_OPTIONAL_MAGIC.PE32;
 
       this.MajorLinkerVersion = reader.ReadByte(true);
       this.MinorLinkerVersion = reader.ReadByte(true);
       this.SizeOfCode = reader.ReadUInt32(true);
       this.SizeOfInitializedData = reader.ReadUInt32(true);
       this.SizeOfUninitializedData = reader.ReadUInt32(true);
-      this.AddressOfEntryPoint = reader.ReadUInt32(true);
+      this.AddressOfEntryPoint = reader.ReadUInt32(true); 
       this.BaseOfCode = reader.ReadUInt32(true);
       this.BaseOfData = bit32 ? reader.ReadUInt32(true) : 0;
 
@@ -200,9 +202,21 @@ class PEOptionalHeader {
           /////
       }
 
-      
       this.Magic.Formatter = Formatters.PEMagic;
-      this.AddressOfEntryPoint.Formatter = Formatters.Hex;
+      this.AddressOfEntryPoint.Formatter = Formatters.MappedAddress;
+      this.BaseOfCode.Formatter = Formatters.MappedAddress;
+      if (this.BaseOfData instanceof Field)
+        this.BaseOfData.Formatter = Formatters.MappedAddress;
+      if (this.ImageBase instanceof Field)
+        this.ImageBase.Formatter = Formatters.Hex;
+      this.SectionAlignment.Formatter = Formatters.Hex;
+      this.FileAlignment.Formatter = Formatters.Hex;
+      this.SizeOfImage.Formatter = Formatters.Hex;
+      this.SizeOfHeaders.Formatter = Formatters.Hex;
+      this.SizeOfStackReserve.Formatter = Formatters.Hex;
+      this.SizeOfStackCommit.Formatter = Formatters.Hex;
+      this.SizeOfHeapReserve.Formatter = Formatters.Hex;
+      this.SizeOfHeapCommit.Formatter = Formatters.Hex;
 
   }
 
@@ -494,7 +508,7 @@ class ResourceDirectoryTable {
   ReadFromStream(reader, address, resourceBaseAddress) {
     reader.JumpTo(address, true, false);
     this.Characteristics = reader.ReadUInt32();
-    this.TimeDateStamp = reader.ReadUInt32();
+    this.TimeDateStamp = reader.ReadUInt32(true);
     this.MajorVersion = reader.ReadUInt16();
     this.MinorVersion = reader.ReadUInt16();
     this.NumberOfNameEntries = reader.ReadUInt16();
@@ -507,6 +521,8 @@ class ResourceDirectoryTable {
       this.Entries.push(new ResourceDirectoryEntry(reader, resourceBaseAddress, this.NestLevel, this.ResourceType));
     }
     reader.JumpBack();
+
+    this.TimeDateStamp.Formatter = Formatters.UnixTimestamp;
   }
 
 }
@@ -696,6 +712,9 @@ class ExeFile {
       var ldata = explode(data.toLowerCase());
       var udata = explode(data.toUpperCase());
       data = explode(data);
+    } else {
+      // Idea of case makes no sense if not searching for a string
+      ignoreCase = false;
     }
     var len = this._reader._data.length - data.length;
     for (let i = start; i < len; i++) {
@@ -758,15 +777,22 @@ class VS_VERSIONINFO {
       this.reader = reader;
       // Only jump if address specified
       if (address != null) reader.JumpTo(address, true, false);
-      this.ResourceSize = reader.ReadUInt16();
+      this.resourceSize = reader.ReadUInt16();
       this.valueDataSize = reader.ReadUInt32();
       this.valueType;
       this.identifierString = Utils.DecodeUtf16(reader.ReadBytes(32));
-      reader.ReadBytes(4 - reader.Position % 4); // Padding
+      reader.AlignToNext(4); // Padding
       this.version = new VS_FIXEDFILEINFO(reader);
-      reader.ReadBytes(4 - reader.Position % 4); // Padding
-      // this.versionSubVals = ... TODO!
+      reader.AlignToNext(4); // Padding
+      //this.versionSubVals = new VS_
       if (address != null) reader.JumpBack();
+    }
+
+    toString() {
+      this.versionSubVals = "(Version subvals hasn't been implemented yet)";
+      return (
+        this.version.toString() + "\r\n" + 
+        this.versionSubVals.toString());
     }
   
   }
@@ -782,7 +808,7 @@ class VS_FIXEDFILEINFO {
   ProductVersionLS;
   FileFlagsMask;
   FileFlags;
-  _fileOS;
+  #fileOS;
   get FileOS() { return this.DecodeFileOS(); };
   FileType;
   FileSubtype;
@@ -806,7 +832,7 @@ class VS_FIXEDFILEINFO {
     this.ProductVersionLS = reader.ReadUInt32();
     this.FileFlagsMask = reader.ReadUInt32();
     this.FileFlags = reader.ReadUInt32();
-    this._fileOS = reader.ReadUInt32();
+    this.#fileOS = reader.ReadUInt32();
     this.FileType = reader.ReadUInt32();
     this.FileSubtype = reader.ReadUInt32();
     this.FileDateMS = reader.ReadUInt32();
@@ -816,10 +842,10 @@ class VS_FIXEDFILEINFO {
   }
 
   DecodeFileOS() {
-    if (this._fileOS == 0) return "Unknown";
+    if (this.#fileOS == 0) return "Unknown";
     var os = [];
-    var b1 = (this._fileOS & 0xFF0000) >> 16;
-    var b2 = this._fileOS & 0xFF;
+    var b1 = (this.#fileOS & 0xFF0000) >> 16;
+    var b2 = this.#fileOS & 0xFF;
     switch (b1) {
       case 1: os.push("DOS"); break;
       case 2: os.push("16-bit OS/2"); break;
@@ -833,6 +859,21 @@ class VS_FIXEDFILEINFO {
       case 4: os.push("32-bit Windows"); break;
     }
     return os.join(", ");
+  }
+
+  toString() {
+    return `StrucVersion: ${this.StrucVersion}\r\n` + 
+    `FileVersionMS: ${this.FileVersionMS}\r\n` + 
+    `FileVersionLS: ${this.FileVersionLS}\r\n` + 
+    `ProductVersionMS: ${this.ProductVersionMS}\r\n` + 
+    `ProductVersionLS: ${this.ProductVersionLS}\r\n` + 
+    `FileFlagsMask: ${this.FileFlagsMask}\r\n` + 
+    `FileFlags: ${this.FileFlags}\r\n` + 
+    `FileOS: ${this.FileOS}\r\n` + 
+    `FileType: ${this.FileType}\r\n` + 
+    `FileSubtype: ${this.FileSubtype}\r\n` + 
+    `FileDateMS: ${this.FileDateMS}\r\n` + 
+    `FileDateLS: ${this.FileDateLS}`;
   }
 
 }

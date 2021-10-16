@@ -24,6 +24,13 @@ var Formatters = {
       value);
   },
 
+  MappedAddress: function(value) {
+    // TODO: Don't reference globals / exeFile etc here
+    var addr = Formatters.Address(globals.exeFile._reader.MapAddress(value));
+    addr.innerHTML += " <i style='color: #888;'>(mapped)</i>";
+    return addr;
+  },
+
   PEMagic: function(value) {
     if (typeof value == "number") {
       value = Utils.ToLEBytes(value);
@@ -33,13 +40,25 @@ var Formatters = {
       throw("Unknown data type passed to formatter");
     }
     var hexValue = Formatters.Hex(value);
-    if (value == PE_OPTIONAL_MAGIC.PE32) {
+    if (value == Consts.PE_OPTIONAL_MAGIC.PE32) {
       return hexValue + " (32-bit)";
-    } else if (value == PE_OPTIONAL_MAGIC.PE32_PLUS) {
+    } else if (value == Consts.PE_OPTIONAL_MAGIC.PE32_PLUS) {
       return hexValue + " (64-bit)";
     } else {
       return hexValue + " (unrecognised)";
     }
+  },
+
+  UnixTimestamp: function(value) {
+    var date =  new Date(value * 1000);
+    var y = date.getUTCFullYear(),
+        m = (date.getUTCMonth()+1).toString().padStart(2, "0"),
+        d = date.getUTCDate().toString().padStart(2, "0"),
+        h = date.getUTCHours().toString().padStart(2, "0"),
+        i = date.getUTCMinutes().toString().padStart(2, "0"),
+        s = date.getUTCSeconds().toString().padStart(2, "0");
+    return y + "-" + m + "-" + d + " " + 
+           h + ":" + i + ":" + s + " (UTC)";
   }
 }
 
@@ -139,9 +158,10 @@ var Utils = {
     }
   },
   
-  BytesToString: function(bytes) {
+  BytesToString: function(bytes, nullTerminate = true) {
     var s = "";
     for (let b of bytes) {
+      if (nullTerminate && b == 0) return s;
       s += String.fromCharCode(b);
     }
     return s;
@@ -166,6 +186,47 @@ var Utils = {
       }
     }
     return String.fromCharCode.apply(String, a16);
+  },
+
+  ValidHex: function(hex) {
+    var hexRegExp = new RegExp(/^[0-9a-fA-F ]+$/);
+    return hexRegExp.test(hex);
+  },
+
+  CreateTextArea: function(content, readOnly = true) {
+    var domTextArea = document.createElement("textarea");
+    domTextArea.readOnly = readOnly;
+    domTextArea.value = content;
+    return domTextArea;
+  },
+
+  RestrictToHex: function(element) {
+    var strLen = element.value.length;
+    var newStrChars = [];
+    var j = 0;
+    var initSel = element.selectionStart;
+    var newSel = element.value.length;
+    for (let i = 0; i < strLen; i++) {
+      let foundChar = element.value.charAt(i);
+      if (foundChar >= "A" && foundChar <= "F") {
+        newStrChars.push(foundChar.toLowerCase());
+        j++;
+      } else if (foundChar >= "a" && foundChar <= "f") {
+        newStrChars.push(foundChar);
+        j++;
+      } else if (foundChar >= "0" && foundChar <= "9") {
+        newStrChars.push(foundChar);
+        j++;
+      }
+      if (j % 3 == 2 && i != strLen - 1) {
+        newStrChars.push(" ");
+        j++;
+      }
+      if (i == initSel - 1) newSel = j;
+    }
+    element.value = newStrChars.join("");
+    element.selectionStart = newSel;
+    element.selectionEnd = newSel;
   }
 
 }

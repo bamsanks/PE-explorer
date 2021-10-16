@@ -1,3 +1,4 @@
+// These handlers must return an HTML element
 var ResourceHandlers = {
   String: function() {
     var resource = this;
@@ -8,12 +9,14 @@ var ResourceHandlers = {
       if (nchar > data.length) throw("Overflow");
       str.push(Utils.DecodeUtf16(data.splice(0, nchar * 2)));
     }
-    return str.join("\r\n");
+    var value = str.join("\r\n");
+    return Utils.CreateTextArea(value);
   },
 
   Default: function() {
     var resource = this;
-    return Utils.BytesToString(resource.Extract());
+    var value = Utils.BytesToString(resource.Extract());
+    return Utils.CreateTextArea(value);
   },
 
   PNG: function() {
@@ -34,9 +37,17 @@ var ResourceHandlers = {
     var resource = this;
     var dib = resource.Extract();
 
+    var bitcount = Utils.ToUInt32(dib.slice(14, 16));
+    if (bitcount == 1) bitcount = 1; 
+    else if (bitcount <= 4) bitcount = 4; 
+    else if (bitcount <= 8) bitcount = 8; 
+    else if (bitcount <= 16) bitcount = 16; 
+    else if (bitcount <= 24) bitcount = 24; 
+    else bitcount = 32; 
+
     offset = 14 +   // Size of BITMAPFILEHEADER
       Utils.ToUInt32(dib.slice(0, 4)) + // Size of BITMAPINFOHEADER
-      4 * Utils.ToUInt32(dib.slice(32, 36));  // Size of RGBQUAD * Number of colours
+      4 * (1 << bitcount);  // Size of RGBQUAD * Number of colours
 
     bfType = Utils.StringToBytes("BM");
     bfSize = Utils.ToLEBytes(14 + dib.length, 4);
@@ -62,5 +73,11 @@ var ResourceHandlers = {
 
   Cursor: function() {
     return ResourceHandlers.Bitmap.bind(this)();
+  },
+
+  Version: function() {
+    var reader = new Reader(this.Extract());
+    var version = new VS_VERSIONINFO(reader);
+    return Utils.CreateTextArea(version.toString());
   }
 }

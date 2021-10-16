@@ -14,12 +14,15 @@
     <script type="text/javascript" src="scripts/viewer.js"></script>
     <script type="text/javascript" src="scripts/main.js"></script>
 
+    <script type="text/javascript" src="scripts/net.js"></script>
+
     <title>Executable Explorer</title>
   </head>
   <body>
     <div id="app-menu">
       <div class="menu-item" id="open-btn" onclick="ShowFilePicker()" title="Open (Ctrl+O)">Open File</div>
       <div class="menu-item" id="find-btn" onclick="windows.finder.Show()" title="Find (Ctrl+F)" style="display: none;">Find in File</div>
+      <div class="menu-item" id="net-btn" onclick="NetExperiment()">.NET</div>
     </div>
     <div id="app-body">
       <div id="splitter" class="splitter-horiz">
@@ -70,7 +73,7 @@
         <div id="find-bottom-section">
           <div id="find-settings">
             <div>
-              <input type="checkbox" name="find-ignore-case" id="find-ignore-case">
+              <input type="checkbox" name="find-ignore-case" id="find-ignore-case" checked>
               <label for="find-ignore-case">Ignore case</label>
             </div>
             <div>
@@ -80,6 +83,10 @@
             <div>
               <input type="checkbox" name="find-update-searchfrom" id="find-update-searchfrom" checked>
               <label for="find-update-searchfrom">Auto-increment "Search from"</label>
+            </div>
+            <div>
+              <input type="checkbox" name="find-search-hex" id="find-search-hex">
+              <label for="find-search-hex">Search for hex</label>
             </div>
           </div>
           <div id="find-response">

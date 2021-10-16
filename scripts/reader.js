@@ -168,4 +168,10 @@ class Reader {
     return Array.from(data).map(y => Utils.DecToHex(y)).join(" ");
   }
 
+  // Move to next position that is a multiple of 'multiple'
+  AlignToNext(multiple) {
+    if (this._position % multiple == 0) return;
+    this._position += (multiple - (this._position % multiple));
+  }
+
 }

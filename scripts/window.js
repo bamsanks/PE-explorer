@@ -33,12 +33,25 @@ function DoFind() {
   var wrapSearch = document.getElementById("find-wrap");
   var findResponse = document.getElementById("find-response");
   var updateSearchfrom = document.getElementById("find-update-searchfrom");
-  var findTextStr = findText.value;
+  var searchHex = document.getElementById("find-search-hex");
+  var findValue = findText.value;
   var searchFromInt = Utils.HexToDec(searchFrom.value);
   if (!isFinite(searchFromInt)) searchFromInt = 0;
-  var pos = globals.exeFile.Find(findTextStr, ignoreCaseCheckbox.checked, searchFromInt, wrapSearch.checked);
+  if (searchHex.checked) {
+    if (Utils.ValidHex(findValue)) {
+      findValue = findValue.trim().split(" ").map(Utils.HexToDec);
+    } else {
+      findResponse.innerHTML = "<p style='color: #f40;'>Invalid hex</p>";
+      return;
+    }
+  } else {
+    // Throw out non-printable characters (as per ASCII) 
+    findValue = findValue.replace(/(?![ -~]).$/, "");
+    findText.value = findValue;
+  }
+  var pos = globals.exeFile.Find(findValue, ignoreCaseCheckbox.checked, searchFromInt, wrapSearch.checked);
   if (pos != -1) {
-    globals.viewer.JumpTo(pos, findTextStr.length, searchFromInt);
+    globals.viewer.JumpTo(pos, findValue.length, searchFromInt);
     searchFromInt = pos + 1;
   }
   if (updateSearchfrom.checked) {
@@ -55,8 +68,42 @@ function DoFind() {
 function CreateFindContent() {
   var findText = document.getElementById("find-text-input");
   var searchFrom = document.getElementById("find-search-from");
-  findText.onkeydown = (e) => { if (e.key == "Enter") DoFind() };
+  var searchForHex = document.getElementById("find-search-hex");
+  var ignoreCaseCheckbox = document.getElementById("find-ignore-case");
+  findText.onkeydown = (e) => {
+    if (e.key == "Enter") {
+      DoFind()
+    } else if (!e.ctrlKey && !e.altKey) {
+      if (!searchForHex.checked) return;
+      var validKey = new RegExp(/[a-fA-F0-9 ]/).test(e.key);
+      if (!validKey) e.preventDefault();
+    }
+  };
+  findText.oninput = (e) => {
+    if (!searchForHex.checked) return;
+    if (e.inputType.startsWith("deleteContent")) return;
+    Utils.RestrictToHex(findText);
+  };
   searchFrom.onkeydown = (e) => { if (e.key == "Enter") DoFind() };
+  searchForHex.onchange = (e) => {
+    var textIsHex = Utils.ValidHex(findText.value);
+    if (searchForHex.checked) {
+      if (!textIsHex) {
+        var hexBytes = Utils.StringToBytes(findText.value).map(x => Utils.DecToHex(x, 2));
+        findText.value = hexBytes.join(" ");
+      }
+      Utils.RestrictToHex(findText);
+      ignoreCaseCheckbox.attributes.invisChecked = ignoreCaseCheckbox.checked;
+      ignoreCaseCheckbox.checked = false;
+      ignoreCaseCheckbox.disabled = true;
+    } else {
+      if (textIsHex) {
+        findText.value = Utils.BytesToString(findText.value.split(" ").map(Utils.HexToDec));
+      }
+      ignoreCaseCheckbox.checked = ignoreCaseCheckbox.attributes.invisChecked;
+      ignoreCaseCheckbox.disabled = false;
+    }
+  };
   return document.getElementById("find-content");
 }
 
@@ -69,7 +116,7 @@ window.addEventListener("load", function() {
   windows.resourceViewer.ZIndex = 100;
   windows.resourceViewer.FocusCallback = SetWindowFocus;
 
-  windows.finder = new Window("Find", 300, 170, false);
+  windows.finder = new Window("Find", 300, 190, false);
   windows.finder.Sizeable = false;
   windows.finder.ZIndex = 200;
   windows.finder.FocusCallback = SetWindowFocus;
