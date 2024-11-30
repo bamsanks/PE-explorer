@@ -47,12 +47,15 @@ function CreateTable(tableData) {
   return table;
 }
 
+// TODO: Why are there two CreateJumpLink functions?
 function CreateJumpLink(innerHTML, address, length = 1, mapped = false) {
-  if (!address) return innerHTML;
+  if (!isFinite(address) || address < 0) return innerHTML;
   // TODO: revise
   if (mapped) address = globals.exeFile._reader.MapAddress(address);
   var link = document.createElement("a");
   link.onclick = () => globals.viewer.JumpTo(address, length);
+  link.onmouseenter = () => globals.viewer.SetHighlight(address, length, true); // TODO: Very dependent on globals...!
+  link.onmouseleave = () => globals.viewer.SetHighlight(address, length, false);
   link.setAttribute("href", "#B" + address);
   link.innerHTML = innerHTML;
   return link;
@@ -240,15 +243,18 @@ function showSection(tabItem, name) {
       dest.innerHTML = htmlOut;
       break;
     case "Exports":
-      htmlOut = "";
-      if (globals.exeFile.Exports?.Exports == null) {
-        htmlOut = "<i>No Exports</i>";
-      } else {
-        for (let exp of globals.exeFile.Exports.Exports ?? []) {
-          htmlOut += exp.Name + "<br>";
-        }
+      if (!globals.exeFile?.Exports?.Exports) {
+        dest.innerHTML = "<i>No Exports</i>";
+        break;
       }
-      dest.innerHTML = htmlOut
+      var tableData = [];
+      for (let exp of globals.exeFile?.Exports?.Exports) {
+        let name = exp.Name;
+        let linkedName = CreateJumpLink(name, name.Address, null, true);
+        tableData.push([linkedName, exp.Rva.toString()]);
+      }
+      
+      dest.appendChild(CreateTable(tableData));
       break;
     case "Resources":
       if (globals.exeFile.Resources == null) {

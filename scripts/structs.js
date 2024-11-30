@@ -179,7 +179,7 @@ class PEOptionalHeader {
       this.NumberOfRvaAndSizes = reader.ReadUInt32(true);
 
       this.directoryEntries = []; //new DataDirectoryEntry[NumberOfRvaAndSizes];
-      this.directoryEntries.toString = () => this.directoryEntries.join(", ");
+      this.directoryEntries.toString = () => this.directoryEntries.join("<br>");
 
       var directoryNames = [
         "Exports", "Imports", "Resources", "Exceptions",
@@ -349,6 +349,8 @@ class Export {
   constructor(name, rva) {
     this.Name = name;
     this.Rva = rva;
+
+    this.Rva.Formatter = Formatters.Address;
   }
 
   toString() {
@@ -468,7 +470,9 @@ class ExportSection {
           // Get address
           reader.JumpTo(this.ExportAddressTableRVA + o * 4, false);
           var rva = reader.ReadInt32(true);
-          exports.push(new Export(s, rva));
+          var mappedRva = rva;
+          mappedRva._address = reader.MapAddress(rva._address);
+          exports.push(new Export(s, mappedRva));
       }
       reader.JumpBack();
       return exports;

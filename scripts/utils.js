@@ -76,6 +76,8 @@ var Utils = {
   CreateJumpLink: function(innerHTML, address, length = 1) {
     var link = document.createElement("a");
     link.onclick = () => globals.viewer.JumpTo(address, length); // TODO: Very dependent on globals...!
+    link.onmouseenter = () => globals.viewer.SetHighlight(address, length, true); // TODO: Very dependent on globals...!
+    link.onmouseleave = () => globals.viewer.SetHighlight(address, length, false);
     link.setAttribute("href", "#B" + address);
     link.innerHTML = innerHTML;
     return link;

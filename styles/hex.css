@@ -88,6 +88,9 @@
 #hex-viewer>code>div>div.highlighted {
   background-color: #fcb;
 }
+#hex-viewer>code>div>div.highlighted-remote {
+  background-color: rgb(255, 210, 88);
+}
 
 #hex-viewer>code>div>div.temphighlighted {
   background-color: #aae2fa !important;

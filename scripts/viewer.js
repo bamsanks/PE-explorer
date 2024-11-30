@@ -387,18 +387,32 @@ class Viewer {
           setTimeout(() => cell.classList.remove("temphighlighted"), 1000);
         }
       }
-      
-      // var tempHighlight = function(element, iters, maxIter) {
-      //   if (maxIter == null) maxIter = iters;
-      //   element.style.backgroundColor = "#008cc8" + Utils.DecToHex(Math.floor(255 * iters / maxIter));
-      //   // TODO: Not global
-      //   if (iters > 0) globals.jumpTimeout = setTimeout(tempHighlight, 20, element, iters-1, maxIter);
-      // }
-      // // TODO: Also reset style of any temp highlights!
-      // if (globals.jumpTimeout) clearTimeout(globals.jumpTimeout);
-      // tempHighlight(cell, 25);
 
     }, 0);
+  }
+
+  SetHighlight(byte, length = 1, highlight = true) {
+    if (byte < 0) byte = 0;
+    if (byte >= this.data.Length) byte = this.data.Length - 1;
+    var [row, col] = this.getCoords(byte);
+
+    //setTimeout(() => {
+      var cells = [];
+      for (let b = 0; b < length; b++) {
+        [row, col] = this.getCoords(byte + b);
+        cells.push(this.getHexCell(row, col));
+        cells.push(this.getTxtCell(row, col));
+        for (let cell of cells) {
+          if (!cell) return;
+          if (highlight) {
+            cell.classList.add("highlighted-remote");
+          } else {
+            cell.classList.remove("highlighted-remote");
+          }
+        }
+      }
+
+    //}, 0);
   }
 
   getHexCell(row, col) {
